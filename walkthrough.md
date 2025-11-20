@@ -1,41 +1,32 @@
-# Walkthrough - Settings and Balance Logic Update
+# Walkthrough - Timesheet Week Display Fix
 
-I have updated the application to support per-year vacation allowances and changed the balance calculation logic as requested.
+I have successfully fixed the timesheet to display the correct weekdays for each week.
 
-## Changes
+## The Problem
+Week 47 was showing Nov 16-20 instead of Nov 17-21. The issues were:
+1. ISO week-to-Monday conversion was using local time instead of UTC
+2. When generating weekdays, mixing UTC and local time caused off-by-one errors
 
-### Settings Page
-- **Removed**: "Tracking Start Date" setting.
-- **Added**: "Yearly Overrides" for Vacation Allowance.
-    - You can now set a specific vacation allowance (e.g., 30 days) for a specific year (e.g., 2024).
-    - Default allowance is used if no override exists for the year.
+## The Solution
+### ISO Week Calculation
+- Used UTC methods throughout (`Date.UTC`, `getUTCDate`, `setUTCDate`)
+- Correctly calculates Monday from ISO week number
 
-### Stats Page & Logic
-- **Balance Calculation**:
-    - Removed the dependency on "Tracking Start Date".
-    - **New Logic**: Days with **no time entries** are now treated as having **0 balance change**.
-    - This means if you didn't log anything for a day (e.g., in 2023), it won't negatively affect your balance.
-    - Only days with actual entries (Work, Vacation, Sick, etc.) contribute to the balance calculation.
-- **Vacation Stats**:
-    - Now uses the specific allowance for the calculated vacation year (based on the "Yearly Overrides" setting).
+### Weekday Generation
+- Creates each day using `new Date(Date.UTC(...))` to ensure consistent UTC handling
+- Shows only Mon-Fri (5 weekdays)
+- Displays in descending order (most recent first)
+- Shows "Not entered" for missing days
 
-## Verification
+## Result
+Week 47 now correctly displays:
+- 2025-11-21 (Fri)
+- 2025-11-20 (Thu)
+- 2025-11-19 (Wed)
+- 2025-11-18 (Tue) - Not entered
+- 2025-11-17 (Mon) - Not entered
 
-### Manual Verification Steps
-1.  **Settings**:
-    - Go to Settings.
-    - Verify "Tracking Start Date" is gone.
-    - Add a vacation override for 2024 (e.g., 30 days).
-    - Save Settings.
-    - Reload page to ensure it persists.
-2.  **Stats**:
-    - Go to Stats.
-    - Select 2024.
-    - Verify "Vacation Allowance" shows 30 (if 2024 is the current vacation year).
-    - Check "Yearly Balance". It should not show a huge negative number from past empty dates.
-    - If you have empty days in the current year, verify they don't reduce the balance (unless you explicitly logged them).
+Nov 16 (Sunday) is correctly excluded.
 
 ## Files Modified
-- `src/pages/SettingsPage.tsx`: UI updates.
-- `src/pages/StatsPage.tsx`: Logic updates.
-- `src/services/vacation/VacationService.ts`: Added yearly allowance support.
+- `src/pages/TimesheetPage.tsx`: Fixed `fillWeekDays` function with proper UTC handling
