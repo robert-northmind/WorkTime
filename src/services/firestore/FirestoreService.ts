@@ -6,7 +6,8 @@ import {
   getDocs, 
   query, 
   where, 
-  orderBy
+  orderBy,
+  deleteDoc
 } from 'firebase/firestore';
 import { db, USE_MOCK } from '../firebase/config';
 import type { FirestoreDailyEntry, UserDocument } from '../../types/firestore';
@@ -116,3 +117,20 @@ export const getEntries = async (uid: string, startDate: string, endDate: string
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(doc => doc.data() as FirestoreDailyEntry);
 };
+
+/**
+ * Deletes a daily entry.
+ */
+export const deleteEntry = async (uid: string, date: string): Promise<void> => {
+  if (USE_MOCK) {
+    const entries = getMockData<FirestoreDailyEntry>('mock_entries');
+    const filtered = entries.filter(e => !(e.uid === uid && e.date === date));
+    setMockData('mock_entries', filtered);
+    return;
+  }
+
+  if (!db) throw new Error('Firestore not initialized');
+  const entryId = `${uid}_${date}`;
+  await deleteDoc(doc(db, ENTRIES_COLLECTION, entryId));
+};
+

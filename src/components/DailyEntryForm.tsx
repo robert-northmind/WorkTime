@@ -6,10 +6,11 @@ interface DailyEntryFormProps {
   date: string;
   initialData?: FirestoreDailyEntry | null;
   onSave: (entry: FirestoreDailyEntry) => Promise<void>;
+  onDelete?: () => void;
   uid: string;
 }
 
-export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialData, onSave, uid }) => {
+export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialData, onSave, onDelete, uid }) => {
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [lunchMinutes, setLunchMinutes] = useState(0);
@@ -138,7 +139,21 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialDat
         />
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-3">
+        {onDelete && initialData && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onDelete();
+            }}
+            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            title="Delete this entry (cannot be undone)"
+          >
+            Delete Entry
+          </button>
+        )}
         <button
           type="submit"
           disabled={isSaving}

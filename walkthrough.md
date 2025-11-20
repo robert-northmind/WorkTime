@@ -1,32 +1,38 @@
-# Walkthrough - Timesheet Week Display Fix
+# Walkthrough - Delete Entry Functionality
 
-I have successfully fixed the timesheet to display the correct weekdays for each week.
+I have added the ability to delete timesheet entries.
 
-## The Problem
-Week 47 was showing Nov 16-20 instead of Nov 17-21. The issues were:
-1. ISO week-to-Monday conversion was using local time instead of UTC
-2. When generating weekdays, mixing UTC and local time caused off-by-one errors
+## Changes
 
-## The Solution
-### ISO Week Calculation
-- Used UTC methods throughout (`Date.UTC`, `getUTCDate`, `setUTCDate`)
-- Correctly calculates Monday from ISO week number
+### FirestoreService
+Added `deleteEntry` function that:
+- Takes `uid` and `date` as parameters
+- Supports both mock mode (localStorage) and Firestore mode
+- Removes the entry from the database
 
-### Weekday Generation
-- Creates each day using `new Date(Date.UTC(...))` to ensure consistent UTC handling
-- Shows only Mon-Fri (5 weekdays)
-- Displays in descending order (most recent first)
-- Shows "Not entered" for missing days
+### DailyEntryForm Component
+- Added optional `onDelete` prop
+- Delete button appears to the left of the Save button when an entry exists
+- Red styling clearly indicates destructive action
 
-## Result
-Week 47 now correctly displays:
-- 2025-11-21 (Fri)
-- 2025-11-20 (Thu)
-- 2025-11-19 (Wed)
-- 2025-11-18 (Tue) - Not entered
-- 2025-11-17 (Mon) - Not entered
+### AddEntryPage
+- Passes `handleDelete` function to the form
+- Shows confirmation dialog before deleting
+- Auto-refreshes to show empty form after deletion
 
-Nov 16 (Sunday) is correctly excluded.
+## Features
+- **Side-by-side Buttons**: Delete and Save buttons appear together at the bottom of the form
+- **Confirmation Dialog**: Prevents accidental deletions
+- **Visual Design**: Red delete button, blue save button
+- **Conditional Display**: Delete only shows for existing entries
+- **Auto-refresh**: Form updates to empty state after deletion
+
+## Verification
+
+### Screenshot
+![Delete and Save Buttons](/Users/robertmagnusson/.gemini/antigravity/brain/2a2cf782-98ef-4598-a318-ab96e4e0b541/delete_and_save_buttons_1763672825661.png)
 
 ## Files Modified
-- `src/pages/TimesheetPage.tsx`: Fixed `fillWeekDays` function with proper UTC handling
+- `src/services/firestore/FirestoreService.ts`: Added `deleteEntry` function
+- `src/components/DailyEntryForm.tsx`: Added delete button and `onDelete` prop
+- `src/pages/AddEntryPage.tsx`: Added delete handler

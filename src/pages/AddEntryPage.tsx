@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DailyEntryForm } from '../components/DailyEntryForm';
-import { getEntries, saveEntry } from '../services/firestore/FirestoreService';
+import { getEntries, saveEntry, deleteEntry } from '../services/firestore/FirestoreService';
 import type { FirestoreDailyEntry } from '../types/firestore';
 import { getCurrentUser } from '../services/auth/AuthService';
 import { calculateDailyBalance } from '../services/balance/BalanceService';
@@ -79,6 +79,13 @@ export const AddEntryPage: React.FC = () => {
     await fetchEntry(); // Refresh
   };
 
+  const handleDelete = async () => {
+    if (!user || !entry) return;
+    
+    await deleteEntry(user.uid, selectedDate);
+    await fetchEntry(); // Refresh to show empty form
+  };
+
   if (!user) return <div>Please log in</div>;
 
   return (
@@ -102,6 +109,7 @@ export const AddEntryPage: React.FC = () => {
               date={selectedDate}
               initialData={entry}
               onSave={handleSave}
+              onDelete={handleDelete}
               uid={user.uid}
             />
           )}
