@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { DailyEntry } from '../services/balance/BalanceService';
 import type { FirestoreDailyEntry } from '../types/firestore';
+import { SuccessConfetti } from './SuccessConfetti';
+import { DeleteEffect } from './DeleteEffect';
 
 interface DailyEntryFormProps {
   date: string;
@@ -18,6 +20,10 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialDat
   const [status, setStatus] = useState<DailyEntry['status']>('work');
   const [notes, setNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [showDeleteEffect, setShowDeleteEffect] = useState(false);
+  const saveButtonRef = useRef<HTMLButtonElement>(null);
+  const deleteButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (initialData) {
@@ -55,18 +61,23 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialDat
     };
 
     try {
+      setShowConfetti(true);
       await onSave(entry);
     } catch (error) {
       console.error('Error saving entry:', error);
       alert('Failed to save entry');
+      setShowConfetti(false);
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white shadow rounded-lg p-6 space-y-4">
-      <h3 className="text-lg font-medium text-gray-900">Entry for {date}</h3>
+    <>
+      <SuccessConfetti trigger={showConfetti} buttonRef={saveButtonRef} onComplete={() => setShowConfetti(false)} />
+      <DeleteEffect trigger={showDeleteEffect} buttonRef={deleteButtonRef} onComplete={() => setShowDeleteEffect(false)} />
+      <form onSubmit={handleSubmit} className="bg-white shadow rounded-lg p-6 space-y-4">
+        <h3 className="text-lg font-medium text-gray-900">Entry for {date}</h3>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
@@ -143,11 +154,16 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialDat
       <div className="flex justify-end gap-3">
         {onDelete && initialData && (
           <button
+            ref={deleteButtonRef}
             type="button"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              onDelete();
+              setShowDeleteEffect(true);
+              // Delay the actual delete to show the effect
+              setTimeout(() => {
+                onDelete();
+              }, 600);
             }}
             className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
             title="Delete this entry (cannot be undone)"
@@ -156,6 +172,7 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialDat
           </button>
         )}
         <button
+          ref={saveButtonRef}
           type="submit"
           disabled={isSaving}
           className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
@@ -164,5 +181,6 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialDat
         </button>
       </div>
     </form>
+    </>
   );
 };

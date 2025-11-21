@@ -81,14 +81,20 @@ export const AddEntryPage: React.FC = () => {
   const handleSave = async (newEntry: FirestoreDailyEntry) => {
     if (!user) return;
     await saveEntry(user.uid, newEntry);
-    navigate('/timesheet');
+    // Delay navigation to allow confetti animation to show
+    setTimeout(() => {
+      navigate('/timesheet');
+    }, 800);
   };
 
   const handleDelete = async () => {
     if (!user || !entry) return;
     
     await deleteEntry(user.uid, selectedDate);
-    navigate('/timesheet');
+    // Delay navigation to allow delete effect to show
+    setTimeout(() => {
+      navigate('/timesheet');
+    }, 600);
   };
 
   if (!user) return <div>Please log in</div>;
