@@ -84,27 +84,12 @@ export const StatsPage: React.FC = () => {
         workDays: [1, 2, 3, 4, 5]
       }];
 
+      // Calculate yearly balance by summing all entry balances
       let totalBalanceMinutes = 0;
-      
-      // Map entries for faster lookup
-      const entriesMap = new Map(entries.map(e => [e.date, e]));
-      
-      // Iterate through every day of the selected year to calculate yearly balance
-      const startDate = new Date(selectedYear, 0, 1);
-      const endDate = new Date(selectedYear, 11, 31);
-      const calculationEndDate = selectedYear === currentYear ? new Date() : endDate;
-
-      for (let d = new Date(startDate); d <= calculationEndDate; d.setDate(d.getDate() + 1)) {
-        const dateStr = d.toISOString().split('T')[0];
-        const entry = entriesMap.get(dateStr);
-        
-        if (!entry) {
-          continue;
-        }
-
+      entries.forEach(entry => {
         const result = calculateDailyBalance(entry, defaultSchedule);
         totalBalanceMinutes += result.balanceMinutes;
-      }
+      });
 
       setYearlyBalance(formatHours(totalBalanceMinutes));
 
@@ -210,10 +195,9 @@ export const StatsPage: React.FC = () => {
           <div className="bg-white shadow rounded-lg p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Yearly Balance</h3>
             <div className="flex items-baseline">
-              <span className={`text-4xl font-bold ${Number(yearlyBalance) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {Number(yearlyBalance) > 0 ? '+' : ''}{yearlyBalance}
+              <span className={`text-4xl font-bold ${parseFloat(yearlyBalance) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {parseFloat(yearlyBalance) > 0 ? '+' : ''}{yearlyBalance}
               </span>
-              <span className="ml-2 text-gray-500">hours</span>
             </div>
             <p className="mt-2 text-sm text-gray-500">
               Total accumulated balance for {selectedYear} (up to today).
