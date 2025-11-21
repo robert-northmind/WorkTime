@@ -39,7 +39,11 @@ export const TimesheetPage: React.FC = () => {
   const navigate = useNavigate();
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [entries, setEntries] = useState<FirestoreDailyEntry[]>([]);
-  const [weeklyHours, setWeeklyHours] = useState(40);
+  const [schedules, setSchedules] = useState<any[]>([{
+    effectiveDate: '2000-01-01',
+    weeklyHours: 40,
+    workDays: [1, 2, 3, 4, 5]
+  }]);
   const [loading, setLoading] = useState(false);
   
   const user = getCurrentUser();
@@ -55,10 +59,8 @@ export const TimesheetPage: React.FC = () => {
     try {
       // Fetch Settings
       const userDoc = await getUser(user.uid);
-      let currentWeeklyHours = 40;
       if (userDoc && userDoc.settings && userDoc.settings.schedules && userDoc.settings.schedules.length > 0) {
-        currentWeeklyHours = userDoc.settings.schedules[0].weeklyHours;
-        setWeeklyHours(currentWeeklyHours);
+        setSchedules(userDoc.settings.schedules);
       }
 
       // Fetch Entries
@@ -81,12 +83,6 @@ export const TimesheetPage: React.FC = () => {
   // Generate year options (current year +/- 5 years)
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
-
-  const defaultSchedule = [{
-    effectiveDate: '2000-01-01',
-    weeklyHours: weeklyHours,
-    workDays: [1, 2, 3, 4, 5]
-  }];
 
   // Group entries by week and fill in missing days
   const groupedByWeek: { weekKey: string; weekRange: string; entries: { date: string; entry: FirestoreDailyEntry | null }[] }[] = [];
@@ -233,7 +229,7 @@ export const TimesheetPage: React.FC = () => {
                   
                   week.entries.forEach((item) => {
                     if (item.entry) {
-                      const result = calculateDailyBalance(item.entry, defaultSchedule);
+                      const result = calculateDailyBalance(item.entry, schedules);
                       weeklyBalanceMinutes += result.balanceMinutes;
                       if (item.entry.status === 'work') {
                         weeklyWorkedMinutes += result.actualMinutes;
@@ -294,7 +290,7 @@ export const TimesheetPage: React.FC = () => {
                         
                         // Regular entry with data
                         const entry = item.entry;
-                        const balanceResult = calculateDailyBalance(entry, defaultSchedule);
+                        const balanceResult = calculateDailyBalance(entry, schedules);
                         const balanceStr = formatHours(balanceResult.balanceMinutes);
                         const isPositive = balanceResult.balanceMinutes > 0;
                         const isZero = balanceResult.balanceMinutes === 0;

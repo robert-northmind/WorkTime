@@ -9,6 +9,7 @@ export interface UserDocument {
     schedules: WorkSchedule[];
     vacation: VacationSettings;
     trackingStartDate?: string; // YYYY-MM-DD
+    yearlyComments?: Record<string, string>; // Year -> Comment
   };
   createdAt: string;
 }
