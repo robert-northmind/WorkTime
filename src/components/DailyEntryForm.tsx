@@ -3,6 +3,7 @@ import type { DailyEntry } from '../services/balance/BalanceService';
 import type { FirestoreDailyEntry } from '../types/firestore';
 import { SuccessConfetti } from './SuccessConfetti';
 import { DeleteEffect } from './DeleteEffect';
+import { minutesToTime, timeToMinutes } from '../services/time/TimeService';
 
 interface DailyEntryFormProps {
   date: string;
@@ -15,8 +16,8 @@ interface DailyEntryFormProps {
 export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialData, onSave, onDelete, uid }) => {
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
-  const [lunchMinutes, setLunchMinutes] = useState(0);
-  const [extraHours, setExtraHours] = useState(0);
+  const [lunchTime, setLunchTime] = useState('00:00');
+  const [extraTime, setExtraTime] = useState('00:00');
   const [status, setStatus] = useState<DailyEntry['status']>('work');
   const [notes, setNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -29,16 +30,16 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialDat
     if (initialData) {
       setStartTime(initialData.startTime || '');
       setEndTime(initialData.endTime || '');
-      setLunchMinutes(initialData.lunchMinutes || 0);
-      setExtraHours(initialData.extraHours || 0);
+      setLunchTime(minutesToTime(initialData.lunchMinutes || 0));
+      setExtraTime(minutesToTime((initialData.extraHours || 0) * 60));
       setStatus(initialData.status || 'work');
       setNotes(initialData.notes || '');
     } else {
       // Reset form for new date
       setStartTime('');
       setEndTime('');
-      setLunchMinutes(0);
-      setExtraHours(0);
+      setLunchTime('00:00');
+      setExtraTime('00:00');
       setStatus('work');
       setNotes('');
     }
@@ -53,8 +54,8 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialDat
       date,
       startTime,
       endTime,
-      lunchMinutes: Number(lunchMinutes),
-      extraHours: Number(extraHours),
+      lunchMinutes: timeToMinutes(lunchTime),
+      extraHours: timeToMinutes(extraTime) / 60,
       status,
       notes,
       updatedAt: new Date().toISOString()
@@ -118,22 +119,21 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialDat
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Lunch (minutes)</label>
+              <label className="block text-sm font-medium text-gray-700">Lunch (hh:mm)</label>
               <input
-                type="number"
-                value={lunchMinutes}
-                onChange={(e) => setLunchMinutes(Number(e.target.value))}
+                type="time"
+                value={lunchTime}
+                onChange={(e) => setLunchTime(e.target.value)}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Extra Hours</label>
+              <label className="block text-sm font-medium text-gray-700">Extra Hours (hh:mm)</label>
               <input
-                type="number"
-                step="0.01"
-                value={extraHours}
-                onChange={(e) => setExtraHours(Number(e.target.value))}
+                type="time"
+                value={extraTime}
+                onChange={(e) => setExtraTime(e.target.value)}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2"
               />
             </div>
