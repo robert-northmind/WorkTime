@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
-import { LogOut, Calendar, BarChart2, Settings, Clock } from 'lucide-react';
+import { LogOut, Calendar, BarChart2, Settings } from 'lucide-react';
 import { logout } from '../services/auth/AuthService';
 
 export const Layout: React.FC = () => {
@@ -16,15 +16,11 @@ export const Layout: React.FC = () => {
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Clock className="h-6 w-6 text-blue-600" />
+            <Calendar className="h-6 w-6 text-blue-600" />
             <h1 className="text-xl font-bold text-gray-900">WorkTime</h1>
           </div>
           
           <nav className="flex gap-4">
-            <Link to="/entry" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              Add Work Day
-            </Link>
             <Link to="/timesheet" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               Timesheet

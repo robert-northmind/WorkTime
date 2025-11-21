@@ -7,10 +7,11 @@ import { calculateDailyBalance } from '../services/balance/BalanceService';
 import { getExpectedDailyHours } from '../services/schedule/ScheduleService';
 import { formatHours } from '../services/time/TimeService';
 
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 
 export const AddEntryPage: React.FC = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const dateParam = searchParams.get('date');
   
   const [selectedDate, setSelectedDate] = useState(dateParam || new Date().toISOString().split('T')[0]);
@@ -19,6 +20,10 @@ export const AddEntryPage: React.FC = () => {
   const [balance, setBalance] = useState<{ actual: string; expected: string; diff: string } | null>(null);
 
   const user = getCurrentUser();
+
+  const handleBack = () => {
+    navigate('/timesheet');
+  };
 
   useEffect(() => {
     if (dateParam) {
@@ -76,14 +81,14 @@ export const AddEntryPage: React.FC = () => {
   const handleSave = async (newEntry: FirestoreDailyEntry) => {
     if (!user) return;
     await saveEntry(user.uid, newEntry);
-    await fetchEntry(); // Refresh
+    navigate('/timesheet');
   };
 
   const handleDelete = async () => {
     if (!user || !entry) return;
     
     await deleteEntry(user.uid, selectedDate);
-    await fetchEntry(); // Refresh to show empty form
+    navigate('/timesheet');
   };
 
   if (!user) return <div>Please log in</div>;
@@ -91,7 +96,18 @@ export const AddEntryPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Timesheet</h2>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleBack}
+            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            title="Back to timesheet"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+          </button>
+          <h2 className="text-2xl font-bold text-gray-900">Timesheet</h2>
+        </div>
         <input
           type="date"
           value={selectedDate}

@@ -41,7 +41,7 @@ const App: React.FC = () => {
             <Layout />
           </ProtectedRoute>
         }>
-          <Route index element={<Navigate to="/entry" replace />} />
+          <Route index element={<Navigate to="/timesheet" replace />} />
           <Route path="entry" element={<AddEntryPage />} />
           <Route path="timesheet" element={<TimesheetPage />} />
           <Route path="stats" element={<StatsPage />} />
