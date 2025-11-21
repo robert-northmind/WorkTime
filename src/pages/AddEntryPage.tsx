@@ -78,7 +78,7 @@ export const AddEntryPage: React.FC = () => {
     }
   };
 
-  const handleFormChange = (updatedFields: Partial<FirestoreDailyEntry>) => {
+  const handleFormChange = React.useCallback((updatedFields: Partial<FirestoreDailyEntry>) => {
     // Create a temporary entry object for calculation
     const tempEntry: any = {
       ...updatedFields,
@@ -99,7 +99,7 @@ export const AddEntryPage: React.FC = () => {
       expected: formatHours(result.expectedMinutes),
       diff: formatHours(result.balanceMinutes)
     });
-  };
+  }, [user]);
 
   const handleSave = async (newEntry: FirestoreDailyEntry) => {
     if (!user) return;
