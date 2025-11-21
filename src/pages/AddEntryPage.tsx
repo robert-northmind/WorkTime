@@ -78,6 +78,29 @@ export const AddEntryPage: React.FC = () => {
     }
   };
 
+  const handleFormChange = (updatedFields: Partial<FirestoreDailyEntry>) => {
+    // Create a temporary entry object for calculation
+    const tempEntry: any = {
+      ...updatedFields,
+      uid: user?.uid || '',
+      updatedAt: new Date().toISOString()
+    };
+
+    // Calculate balance preview
+    const defaultSchedule = [{
+      effectiveDate: '2000-01-01',
+      weeklyHours: 40,
+      workDays: [1, 2, 3, 4, 5]
+    }];
+
+    const result = calculateDailyBalance(tempEntry, defaultSchedule);
+    setBalance({
+      actual: formatHours(result.actualMinutes),
+      expected: formatHours(result.expectedMinutes),
+      diff: formatHours(result.balanceMinutes)
+    });
+  };
+
   const handleSave = async (newEntry: FirestoreDailyEntry) => {
     if (!user) return;
     await saveEntry(user.uid, newEntry);
@@ -132,6 +155,7 @@ export const AddEntryPage: React.FC = () => {
               initialData={entry}
               onSave={handleSave}
               onDelete={handleDelete}
+              onChange={handleFormChange}
               uid={user.uid}
             />
           )}
