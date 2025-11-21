@@ -8,7 +8,7 @@ export interface DailyEntry {
   endTime: string;
   lunchMinutes: number;
   extraHours: number;
-  status: 'work' | 'vacation' | 'holiday' | 'sick';
+  status: 'work' | 'vacation' | 'holiday' | 'sick' | 'grafana-day';
   notes?: string;
 }
 

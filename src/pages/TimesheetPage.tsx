@@ -240,18 +240,18 @@ export const TimesheetPage: React.FC = () => {
                   return (
                     <React.Fragment key={week.weekKey}>
                       {/* Weekly Summary Row */}
-                      <tr className="bg-blue-50 border-t-2 border-blue-200">
+                      <tr className="bg-slate-100 border-t-2 border-slate-300">
                         <td colSpan={6} className="px-6 py-3">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-semibold text-blue-900">
+                            <span className="text-sm font-semibold text-slate-800">
                               Week {week.weekKey.split('-W')[1]} ({week.weekRange})
                             </span>
                             <div className="flex gap-6 text-sm">
-                              <span className="text-gray-700">
-                                <span className="font-medium">Worked:</span> {weeklyWorkedStr}h
+                              <span className="text-slate-700">
+                                <span className="font-medium">Worked:</span> {weeklyWorkedStr}
                               </span>
                               <span className={`font-medium ${isWeekPositive ? 'text-green-700' : isWeekZero ? 'text-gray-500' : 'text-red-700'}`}>
-                                <span className="font-medium">Balance:</span> {isWeekPositive ? '+' : ''}{weeklyBalanceStr}h
+                                <span className="font-medium">Balance:</span> {isWeekPositive ? '+' : ''}{weeklyBalanceStr}
                               </span>
                             </div>
                           </div>
@@ -269,7 +269,8 @@ export const TimesheetPage: React.FC = () => {
                               className="hover:bg-gray-50 cursor-pointer transition-colors bg-gray-50/50"
                             >
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-400">
-                                {item.date}
+                                {new Date(item.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}{' '}
+                                <span className="italic">{item.date}</span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 italic">
                                 Not entered
@@ -293,18 +294,24 @@ export const TimesheetPage: React.FC = () => {
                           <tr 
                             key={entry.date} 
                             onClick={() => handleRowClick(entry.date)}
-                            className="hover:bg-gray-50 cursor-pointer transition-colors"
+                            className={`cursor-pointer transition-colors ${
+                              entry.status !== 'work' 
+                                ? 'bg-blue-50 hover:bg-blue-100' 
+                                : 'hover:bg-gray-50'
+                            }`}
                           >
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                              {entry.date}
+                              {new Date(entry.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}{' '}
+                              <span className="italic">{entry.date}</span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
                               <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                                 ${entry.status === 'work' ? 'bg-green-100 text-green-800' : 
                                   entry.status === 'vacation' ? 'bg-blue-100 text-blue-800' :
                                   entry.status === 'sick' ? 'bg-red-100 text-red-800' :
+                                  entry.status === 'grafana-day' ? 'bg-gradient-to-r from-orange-400 to-yellow-400 text-white' :
                                   'bg-yellow-100 text-yellow-800'}`}>
-                                {entry.status}
+                                {entry.status === 'grafana-day' ? 'Grafana Day' : entry.status}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

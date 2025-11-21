@@ -80,6 +80,7 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialDat
             <option value="vacation">Vacation</option>
             <option value="holiday">Holiday</option>
             <option value="sick">Sick</option>
+            <option value="grafana-day">Grafana Day</option>
           </select>
         </div>
 

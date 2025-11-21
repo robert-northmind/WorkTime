@@ -29,9 +29,13 @@ export const calculateDuration = (startTime: string, endTime: string): number =>
 };
 
 /**
- * Formats minutes as decimal hours (e.g., 90 -> "1.50").
+ * Formats minutes as hours:minutes (e.g., 90 -> "1:30", -45 -> "-0:45").
  */
 export const formatHours = (minutes: number): string => {
-  const hours = minutes / 60;
-  return hours.toFixed(2);
+  const isNegative = minutes < 0;
+  const absMinutes = Math.abs(minutes);
+  const hours = Math.floor(absMinutes / 60);
+  const mins = Math.floor(absMinutes % 60);
+  
+  return `${isNegative ? '-' : ''}${hours}:${mins.toString().padStart(2, '0')}`;
 };
