@@ -13,6 +13,7 @@ export const StatsPage: React.FC = () => {
   const [vacationStats, setVacationStats] = useState<{ used: number; planned: number; remaining: number; allowance: number } | null>(null);
   const [yearlyBalance, setYearlyBalance] = useState<string>('0.00');
   const [averageWeeklyHours, setAverageWeeklyHours] = useState<string>('0.00');
+  const [expectedWeeklyHours, setExpectedWeeklyHours] = useState<number>(40);
   
   const user = getCurrentUser();
 
@@ -52,6 +53,7 @@ export const StatsPage: React.FC = () => {
         }
         if (userDoc.settings.schedules && userDoc.settings.schedules.length > 0) {
           weeklyHours = userDoc.settings.schedules[0].weeklyHours;
+          setExpectedWeeklyHours(weeklyHours);
         }
       }
 
@@ -83,45 +85,69 @@ export const StatsPage: React.FC = () => {
       }];
 
       let totalBalanceMinutes = 0;
-      let totalWorkedMinutes = 0;
-      
-      // Iterate through every day of the selected year to calculate balance
-      const startDate = new Date(selectedYear, 0, 1);
-      const endDate = new Date(selectedYear, 11, 31);
-      
-      const calculationEndDate = selectedYear === currentYear ? new Date() : endDate;
       
       // Map entries for faster lookup
       const entriesMap = new Map(entries.map(e => [e.date, e]));
+      
+      // Iterate through every day of the selected year to calculate yearly balance
+      const startDate = new Date(selectedYear, 0, 1);
+      const endDate = new Date(selectedYear, 11, 31);
+      const calculationEndDate = selectedYear === currentYear ? new Date() : endDate;
 
       for (let d = new Date(startDate); d <= calculationEndDate; d.setDate(d.getDate() + 1)) {
         const dateStr = d.toISOString().split('T')[0];
-        
         const entry = entriesMap.get(dateStr);
         
-        // If no entry exists, we treat it as 0 balance change (ignored).
         if (!entry) {
           continue;
         }
 
         const result = calculateDailyBalance(entry, defaultSchedule);
         totalBalanceMinutes += result.balanceMinutes;
-        
-        if (entry.status === 'work') {
-           totalWorkedMinutes += result.actualMinutes;
-        }
       }
 
       setYearlyBalance(formatHours(totalBalanceMinutes));
 
-      // --- 3. Average Weekly Hours ---
-      // Weeks passed = (calculationEndDate - startDate) / 7
-      // Ensure at least 1 week to avoid division by zero
-      const daysPassed = Math.max(1, (calculationEndDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-      const weeksPassed = daysPassed / 7;
+      // --- 4. Average Weekly Hours ---
+      // Group entries by week and calculate weekly balances
+      const weeklyBalances = new Map<string, number>();
       
-      const avgMinutes = totalWorkedMinutes / weeksPassed;
-      setAverageWeeklyHours(formatHours(avgMinutes));
+      // Helper to get ISO week number
+      const getWeekKey = (dateStr: string): string => {
+        const date = new Date(dateStr + 'T00:00:00');
+        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+        const dayNum = d.getUTCDay() || 7;
+        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+        return `${d.getUTCFullYear()}-W${weekNo}`;
+      };
+      
+      // Calculate balance for each week
+      entries.forEach(entry => {
+        const weekKey = getWeekKey(entry.date);
+        const result = calculateDailyBalance(entry, defaultSchedule);
+        
+        if (!weeklyBalances.has(weekKey)) {
+          weeklyBalances.set(weekKey, 0);
+        }
+        weeklyBalances.set(weekKey, weeklyBalances.get(weekKey)! + result.balanceMinutes);
+      });
+      
+      // Calculate average weekly balance
+      const weekCount = weeklyBalances.size;
+      if (weekCount > 0) {
+        const totalWeeklyBalance = Array.from(weeklyBalances.values()).reduce((sum, balance) => sum + balance, 0);
+        const avgWeeklyBalanceMinutes = totalWeeklyBalance / weekCount;
+        
+        // Average weekly hours = expected hours + average weekly balance
+        const expectedWeeklyMinutes = weeklyHours * 60;
+        const avgWeeklyMinutes = expectedWeeklyMinutes + avgWeeklyBalanceMinutes;
+        
+        setAverageWeeklyHours(formatHours(avgWeeklyMinutes));
+      } else {
+        setAverageWeeklyHours(formatHours(weeklyHours * 60));
+      }
 
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -204,7 +230,7 @@ export const StatsPage: React.FC = () => {
               <span className="ml-2 text-gray-500">hours/week</span>
             </div>
             <p className="mt-2 text-sm text-gray-500">
-              Average actual hours worked per week in {selectedYear}.
+              Expected: {expectedWeeklyHours}h/week
             </p>
           </div>
         </div>
