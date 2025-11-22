@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { getCurrentUser } from '../services/auth/AuthService';
-import { getUser, saveUser } from '../services/firestore/FirestoreService';
+import { 
+  getUser, 
+  saveUser
+} from '../services/firestore/FirestoreService';
+import { DeveloperZone } from '../components/DeveloperZone';
 
 export const SettingsPage: React.FC = () => {
   const [currentYear] = useState(new Date().getFullYear());
@@ -252,6 +256,9 @@ export const SettingsPage: React.FC = () => {
           </button>
         </div>
       </form>
+
+      {/* Stress Test / Developer Zone */}
+      <DeveloperZone user={user} selectedYear={selectedYear} />
     </div>
   );
 };
