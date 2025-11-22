@@ -14,24 +14,24 @@ export const Layout: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-6 w-6 text-blue-600" />
-            <h1 className="text-xl font-bold text-gray-900">WorkTime</h1>
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-1 sm:gap-2">
+            <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+            <h1 className="text-lg sm:text-xl font-bold text-gray-900">WorkTime</h1>
           </div>
           
-          <nav className="flex gap-4">
-            <Link to="/timesheet" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2">
+          <nav className="flex gap-1 sm:gap-4">
+            <Link to="/timesheet" className="text-gray-600 hover:text-blue-600 px-2 sm:px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1 sm:gap-2">
               <Calendar className="h-4 w-4" />
-              Timesheet
+              <span className="hidden sm:inline">Timesheet</span>
             </Link>
-            <Link to="/stats" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2">
+            <Link to="/stats" className="text-gray-600 hover:text-blue-600 px-2 sm:px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1 sm:gap-2">
               <BarChart2 className="h-4 w-4" />
-              Stats
+              <span className="hidden sm:inline">Stats</span>
             </Link>
-            <Link to="/settings" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2">
+            <Link to="/settings" className="text-gray-600 hover:text-blue-600 px-2 sm:px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1 sm:gap-2">
               <Settings className="h-4 w-4" />
-              Settings
+              <span className="hidden sm:inline">Settings</span>
             </Link>
           </nav>
 
