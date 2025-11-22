@@ -212,7 +212,8 @@ export const TimesheetPage: React.FC = () => {
         <div>Loading...</div>
       ) : (
         <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-          <table className="min-w-full divide-y divide-gray-200">
+          {/* Desktop Table View */}
+          <table className="min-w-full divide-y divide-gray-200 hidden sm:table">
             <thead className="bg-gray-50">
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
@@ -376,6 +377,162 @@ export const TimesheetPage: React.FC = () => {
               )}
             </tbody>
           </table>
+
+          {/* Mobile Card View */}
+          <div className="sm:hidden">
+            {entries.length === 0 ? (
+              <div className="px-4 py-6 text-center text-sm text-gray-500">
+                No entries found for {selectedYear}
+              </div>
+            ) : (
+              groupedByWeek.map((week) => {
+                // Calculate weekly totals
+                let weeklyBalanceMinutes = 0;
+                let weeklyWorkedMinutes = 0;
+                
+                week.entries.forEach((item) => {
+                  if (item.entry) {
+                    const result = calculateDailyBalance(item.entry, schedules);
+                    weeklyBalanceMinutes += result.balanceMinutes;
+                    if (item.entry.status === 'work') {
+                      weeklyWorkedMinutes += result.actualMinutes;
+                    }
+                  }
+                });
+
+                const weeklyBalanceStr = formatHours(weeklyBalanceMinutes);
+                const weeklyWorkedStr = formatHours(weeklyWorkedMinutes);
+                const isWeekPositive = weeklyBalanceMinutes > 0;
+                const isWeekZero = weeklyBalanceMinutes === 0;
+
+                return (
+                  <div key={week.weekKey} className="border-b border-gray-200 last:border-0">
+                    {/* Weekly Header */}
+                    <div className="bg-slate-100 px-4 py-3 border-t border-slate-200 first:border-t-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-semibold text-slate-800">
+                          Week {week.weekKey.split('-W')[1]}
+                        </span>
+                        <span className="text-xs text-slate-500">{week.weekRange}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-700">
+                          Worked: <span className="font-medium">{weeklyWorkedStr}</span>
+                        </span>
+                        <span className={`font-medium ${isWeekPositive ? 'text-green-700' : isWeekZero ? 'text-gray-500' : 'text-red-700'}`}>
+                          Bal: {isWeekPositive ? '+' : ''}{weeklyBalanceStr}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Daily Cards */}
+                    <div className="divide-y divide-gray-100">
+                      {week.entries.map((item) => {
+                        if (!item.entry) {
+                          return (
+                            <div 
+                              key={item.date}
+                              onClick={() => handleRowClick(item.date)}
+                              className="px-4 py-3 bg-gray-50/50 active:bg-gray-100"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-medium text-gray-400">
+                                    {new Date(item.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}
+                                  </span>
+                                  <span className="text-xs text-gray-400 italic">{item.date}</span>
+                                </div>
+                                <span className="text-sm text-gray-400 italic">Not entered</span>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        const entry = item.entry;
+                        const balanceResult = calculateDailyBalance(entry, schedules);
+                        const balanceStr = formatHours(balanceResult.balanceMinutes);
+                        const isPositive = balanceResult.balanceMinutes > 0;
+                        const isZero = balanceResult.balanceMinutes === 0;
+
+                        return (
+                          <div 
+                            key={entry.date}
+                            onClick={() => handleRowClick(entry.date)}
+                            className={`px-4 py-3 active:bg-gray-50 ${
+                              entry.status !== 'work' ? 'bg-blue-50/50' : ''
+                            }`}
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex flex-col">
+                                <span className="text-sm font-medium text-gray-900">
+                                  {new Date(entry.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}
+                                </span>
+                                <span className="text-xs text-gray-500">{entry.date}</span>
+                              </div>
+                              
+                              <span 
+                                className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                                  (() => {
+                                    const custom = customPTO.find(p => p.id === entry.status);
+                                    if (custom || ptoColors[entry.status]) return 'text-white';
+                                    
+                                    if (entry.status === 'work') return 'bg-green-100 text-green-800';
+                                    if (entry.status === 'vacation') return 'bg-blue-100 text-blue-800';
+                                    if (entry.status === 'sick') return 'bg-red-100 text-red-800';
+                                    if (entry.status === 'holiday') return 'bg-yellow-100 text-yellow-800';
+                                    if (entry.status === 'grafana-day') return 'bg-gradient-to-r from-orange-400 to-yellow-400 text-white';
+                                    return 'bg-gray-100 text-gray-800';
+                                  })()
+                                }`}
+                                style={(() => {
+                                  const custom = customPTO.find(p => p.id === entry.status);
+                                  if (custom) return { backgroundColor: custom.color };
+                                  if (ptoColors[entry.status]) return { backgroundColor: ptoColors[entry.status] };
+                                  return {};
+                                })()}
+                              >
+                                {(() => {
+                                  if (entry.status === 'grafana-day') return 'Grafana Day';
+                                  const custom = customPTO.find(p => p.id === entry.status);
+                                  return custom ? custom.name : entry.status;
+                                })()}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between text-sm">
+                              <div className="text-gray-500">
+                                {entry.status === 'work' ? `${entry.startTime} - ${entry.endTime}` : '-'}
+                              </div>
+                              {entry.status === 'work' && (
+                                <div className={`${isPositive ? 'text-green-600' : isZero ? 'text-gray-400' : 'text-red-600'} font-medium`}>
+                                  {isPositive ? '+' : ''}{balanceStr}
+                                </div>
+                              )}
+                            </div>
+
+                            {(entry.extraHours > 0 || entry.notes) && (
+                              <div className="mt-2 pt-2 border-t border-gray-100 flex flex-wrap gap-2 text-xs text-gray-500">
+                                {entry.extraHours > 0 && (
+                                  <span className="bg-gray-100 px-1.5 py-0.5 rounded">
+                                    Extra: +{entry.extraHours}h
+                                  </span>
+                                )}
+                                {entry.notes && (
+                                  <span className="truncate max-w-full">
+                                    {entry.notes}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
       )}
     </div>

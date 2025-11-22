@@ -222,16 +222,16 @@ export const SettingsPage: React.FC = () => {
   if (loading) return <div>Loading settings...</div>;
 
   return (
-    <div className="max-w-2xl mx-auto bg-white shadow rounded-lg p-6">
+    <div className="max-w-2xl mx-auto bg-white shadow rounded-lg p-4 sm:p-6">
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Settings</h2>
       
       <div className="space-y-8">
         
         {/* Yearly Configuration Section */}
         <div className="bg-blue-50 p-6 rounded-lg border border-blue-100 space-y-6">
-          <div className="flex items-center justify-between border-b border-blue-200 pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-blue-200 pb-4 gap-4 sm:gap-0">
             <h3 className="text-lg font-medium text-blue-900">Yearly Configuration</h3>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 self-end sm:self-auto">
               <label htmlFor="year-select" className="text-sm font-medium text-blue-900">Year:</label>
               <select
                 id="year-select"
@@ -298,9 +298,9 @@ export const SettingsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-4 pt-2">
+          <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-4 pt-2">
             {yearlyMessage && (
-              <span className={`text-sm ${yearlyMessage.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>
+              <span className={`text-sm ${yearlyMessage.includes('Error') ? 'text-red-600' : 'text-green-600'} w-full sm:w-auto text-center sm:text-right`}>
                 {yearlyMessage}
               </span>
             )}
@@ -308,7 +308,7 @@ export const SettingsPage: React.FC = () => {
               type="button"
               onClick={handleSaveYearly}
               disabled={saving}
-              className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              className="w-full sm:w-auto inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
               {saving ? 'Saving...' : `Save Yearly Settings (${selectedYear})`}
             </button>
@@ -359,7 +359,7 @@ export const SettingsPage: React.FC = () => {
             ) : (
               <div className="space-y-3">
                 {customPTO.map((pto, index) => (
-                  <div key={pto.id} className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-md">
+                  <div key={pto.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 bg-white border border-gray-200 rounded-md">
                     <input
                       type="text"
                       value={pto.name}
@@ -371,38 +371,40 @@ export const SettingsPage: React.FC = () => {
                       className="flex-1 min-w-0 block w-full px-3 py-2 rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500 sm:text-sm border"
                       placeholder="Type Name"
                     />
-                    <input
-                      type="color"
-                      value={pto.color}
-                      onChange={(e) => {
-                        const newPTO = [...customPTO];
-                        newPTO[index].color = e.target.value;
-                        setCustomPTO(newPTO);
-                      }}
-                      className="h-9 w-14 p-0 block bg-white border border-gray-300 rounded-md cursor-pointer"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const newPTO = customPTO.filter(p => p.id !== pto.id);
-                        setCustomPTO(newPTO);
-                      }}
-                      className="inline-flex items-center p-2 border border-transparent rounded-full shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                      title="Delete Type"
-                    >
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                      <input
+                        type="color"
+                        value={pto.color}
+                        onChange={(e) => {
+                          const newPTO = [...customPTO];
+                          newPTO[index].color = e.target.value;
+                          setCustomPTO(newPTO);
+                        }}
+                        className="h-9 w-14 p-0 block bg-white border border-gray-300 rounded-md cursor-pointer flex-shrink-0"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newPTO = customPTO.filter(p => p.id !== pto.id);
+                          setCustomPTO(newPTO);
+                        }}
+                        className="inline-flex items-center p-2 border border-transparent rounded-full shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 ml-auto sm:ml-0"
+                        title="Delete Type"
+                      >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          <div className="flex items-center justify-end gap-4 pt-2">
+          <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-4 pt-2">
             {globalMessage && (
-              <span className={`text-sm ${globalMessage.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>
+              <span className={`text-sm ${globalMessage.includes('Error') ? 'text-red-600' : 'text-green-600'} w-full sm:w-auto text-center sm:text-right`}>
                 {globalMessage}
               </span>
             )}
@@ -410,7 +412,7 @@ export const SettingsPage: React.FC = () => {
               type="button"
               onClick={handleSaveGlobal}
               disabled={saving}
-              className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50"
+              className="w-full sm:w-auto inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50"
             >
               {saving ? 'Saving...' : 'Save Global Settings'}
             </button>
