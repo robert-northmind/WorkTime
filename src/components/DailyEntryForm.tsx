@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { DailyEntry } from '../services/balance/BalanceService';
-import type { FirestoreDailyEntry } from '../types/firestore';
+import type { FirestoreDailyEntry, CustomPTOType } from '../types/firestore';
+import { getUser } from '../services/firestore/FirestoreService';
 import { SuccessConfetti } from './SuccessConfetti';
 import { DeleteEffect } from './DeleteEffect';
 import { minutesToTime, timeToMinutes } from '../services/time/TimeService';
@@ -25,8 +26,24 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialDat
   const [isSaving, setIsSaving] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showDeleteEffect, setShowDeleteEffect] = useState(false);
+  const [customPTO, setCustomPTO] = useState<CustomPTOType[]>([]);
   const saveButtonRef = useRef<HTMLButtonElement>(null);
   const deleteButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Fetch settings
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const userDoc = await getUser(uid);
+        if (userDoc?.settings?.customPTO) {
+          setCustomPTO(userDoc.settings.customPTO);
+        }
+      } catch (error) {
+        console.error('Error fetching settings:', error);
+      }
+    };
+    fetchSettings();
+  }, [uid]);
 
   // Notify parent of changes
   useEffect(() => {
@@ -109,7 +126,9 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialDat
             <option value="vacation">Vacation</option>
             <option value="holiday">Holiday</option>
             <option value="sick">Sick</option>
-            <option value="grafana-day">Grafana Day</option>
+            {customPTO.map(pto => (
+              <option key={pto.id} value={pto.id}>{pto.name}</option>
+            ))}
           </select>
         </div>
 

@@ -4,7 +4,7 @@ import { getCurrentUser } from '../services/auth/AuthService';
 import { getEntries, getUser } from '../services/firestore/FirestoreService';
 import { calculateDailyBalance } from '../services/balance/BalanceService';
 import { formatHours } from '../services/time/TimeService';
-import type { FirestoreDailyEntry } from '../types/firestore';
+import type { FirestoreDailyEntry, CustomPTOType } from '../types/firestore';
 
 // Helper to get ISO week number
 const getWeekNumber = (dateStr: string): { year: number; week: number } => {
@@ -41,9 +41,10 @@ export const TimesheetPage: React.FC = () => {
   const [entries, setEntries] = useState<FirestoreDailyEntry[]>([]);
   const [schedules, setSchedules] = useState<any[]>([{
     effectiveDate: '2000-01-01',
-    weeklyHours: 40,
     workDays: [1, 2, 3, 4, 5]
   }]);
+  const [customPTO, setCustomPTO] = useState<CustomPTOType[]>([]);
+  const [ptoColors, setPtoColors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   
   const user = getCurrentUser();
@@ -59,8 +60,16 @@ export const TimesheetPage: React.FC = () => {
     try {
       // Fetch Settings
       const userDoc = await getUser(user.uid);
-      if (userDoc && userDoc.settings && userDoc.settings.schedules && userDoc.settings.schedules.length > 0) {
-        setSchedules(userDoc.settings.schedules);
+      if (userDoc && userDoc.settings) {
+        if (userDoc.settings.schedules && userDoc.settings.schedules.length > 0) {
+          setSchedules(userDoc.settings.schedules);
+        }
+        if (userDoc.settings.customPTO) {
+          setCustomPTO(userDoc.settings.customPTO);
+        }
+        if (userDoc.settings.ptoColors) {
+          setPtoColors(userDoc.settings.ptoColors);
+        }
       }
 
       // Fetch Entries
@@ -310,13 +319,34 @@ export const TimesheetPage: React.FC = () => {
                               <span className="italic">{entry.date}</span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
-                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                ${entry.status === 'work' ? 'bg-green-100 text-green-800' : 
-                                  entry.status === 'vacation' ? 'bg-blue-100 text-blue-800' :
-                                  entry.status === 'sick' ? 'bg-red-100 text-red-800' :
-                                  entry.status === 'grafana-day' ? 'bg-gradient-to-r from-orange-400 to-yellow-400 text-white' :
-                                  'bg-yellow-100 text-yellow-800'}`}>
-                                {entry.status === 'grafana-day' ? 'Grafana Day' : entry.status}
+                              <span 
+                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                  (() => {
+                                    // Check if it's a custom type or has a custom color override
+                                    const custom = customPTO.find(p => p.id === entry.status);
+                                    if (custom || ptoColors[entry.status]) return 'text-white'; // Default to white text for custom/overrides
+                                    
+                                    // Default fixed styles
+                                    if (entry.status === 'work') return 'bg-green-100 text-green-800';
+                                    if (entry.status === 'vacation') return 'bg-blue-100 text-blue-800';
+                                    if (entry.status === 'sick') return 'bg-red-100 text-red-800';
+                                    if (entry.status === 'holiday') return 'bg-yellow-100 text-yellow-800';
+                                    if (entry.status === 'grafana-day') return 'bg-gradient-to-r from-orange-400 to-yellow-400 text-white';
+                                    return 'bg-gray-100 text-gray-800';
+                                  })()
+                                }`}
+                                style={(() => {
+                                  const custom = customPTO.find(p => p.id === entry.status);
+                                  if (custom) return { backgroundColor: custom.color };
+                                  if (ptoColors[entry.status]) return { backgroundColor: ptoColors[entry.status] };
+                                  return {};
+                                })()}
+                              >
+                                {(() => {
+                                  if (entry.status === 'grafana-day') return 'Grafana Day';
+                                  const custom = customPTO.find(p => p.id === entry.status);
+                                  return custom ? custom.name : entry.status;
+                                })()}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
