@@ -4,10 +4,11 @@ import {
   setDoc, 
   getDoc, 
   getDocs, 
-  query, 
+  query,
   where, 
   orderBy,
-  deleteDoc
+  deleteDoc,
+  writeBatch
 } from 'firebase/firestore';
 import { db, USE_MOCK } from '../firebase/config';
 import type { FirestoreDailyEntry, UserDocument } from '../../types/firestore';
@@ -133,4 +134,70 @@ export const deleteEntry = async (uid: string, date: string): Promise<void> => {
   const entryId = `${uid}_${date}`;
   await deleteDoc(doc(db, ENTRIES_COLLECTION, entryId));
 };
+
+/**
+ * Batch saves daily entries.
+ */
+export const batchSaveEntries = async (uid: string, entries: FirestoreDailyEntry[]): Promise<void> => {
+  if (USE_MOCK) {
+    const mockEntries = getMockData<FirestoreDailyEntry>('mock_entries');
+    entries.forEach(entry => {
+      const index = mockEntries.findIndex(e => e.uid === uid && e.date === entry.date);
+      if (index >= 0) {
+        mockEntries[index] = entry;
+      } else {
+        mockEntries.push(entry);
+      }
+    });
+    setMockData('mock_entries', mockEntries);
+    return;
+  }
+
+  if (!db) throw new Error('Firestore not initialized');
+  const firestore = db;
+  const batch = writeBatch(firestore);
+  
+  entries.forEach(entry => {
+    const entryId = `${uid}_${entry.date}`;
+    const docRef = doc(firestore, ENTRIES_COLLECTION, entryId);
+    batch.set(docRef, {
+      ...entry,
+      uid,
+      updatedAt: new Date().toISOString()
+    });
+  });
+
+  await batch.commit();
+};
+
+/**
+ * Batch deletes daily entries.
+ */
+export const batchDeleteEntries = async (uid: string, entryIds: string[]): Promise<void> => {
+  if (USE_MOCK) {
+    let mockEntries = getMockData<FirestoreDailyEntry>('mock_entries');
+    // entryIds for mock are just dates in this context if we align with how we call it, 
+    // but let's assume the caller passes the full ID or we parse it. 
+    // Actually, for Firestore batch delete, we usually pass IDs. 
+    // Let's assume entryIds are the document IDs (uid_date).
+    
+    const datesToDelete = entryIds.map(id => id.split('_')[1]);
+    mockEntries = mockEntries.filter(e => !(e.uid === uid && datesToDelete.includes(e.date)));
+    setMockData('mock_entries', mockEntries);
+    return;
+  }
+
+  if (!db) throw new Error('Firestore not initialized');
+  const firestore = db;
+
+  const batch = writeBatch(firestore);
+  
+  entryIds.forEach(id => {
+    const docRef = doc(firestore, ENTRIES_COLLECTION, id);
+    batch.delete(docRef);
+  });
+
+  await batch.commit();
+};
+
 
