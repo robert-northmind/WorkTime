@@ -11,10 +11,11 @@ interface DailyEntryFormProps {
   onSave: (entry: FirestoreDailyEntry) => Promise<void>;
   onDelete?: () => void;
   onChange?: (entry: Partial<FirestoreDailyEntry>) => void;
+  onBack?: () => void;
   uid: string;
 }
 
-export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialData, onSave, onDelete, onChange, uid }) => {
+export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialData, onSave, onDelete, onChange, onBack, uid }) => {
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [lunchTime, setLunchTime] = useState('00:00');
@@ -168,6 +169,15 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialDat
       </div>
 
       <div className="flex justify-end gap-3">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Back
+          </button>
+        )}
         {onDelete && initialData && (
           <button
             ref={deleteButtonRef}
