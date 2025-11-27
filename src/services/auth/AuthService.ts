@@ -1,5 +1,6 @@
 import { 
   signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword,
   signOut, 
   onAuthStateChanged, 
   type User 
@@ -56,6 +57,21 @@ export const login = async (email: string, password: string): Promise<void> => {
   
   if (!auth) throw new Error('Firebase Auth not initialized');
   await signInWithEmailAndPassword(auth, email, password);
+};
+
+export const signup = async (email: string, password: string): Promise<void> => {
+  if (USE_MOCK) {
+    console.log('Mock Signup with:', email, password);
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    mockUser = MOCK_USER;
+    localStorage.setItem('mock_auth_user', 'true');
+    notifyMockListeners();
+    return;
+  }
+  
+  if (!auth) throw new Error('Firebase Auth not initialized');
+  await createUserWithEmailAndPassword(auth, email, password);
 };
 
 export const logout = async (): Promise<void> => {

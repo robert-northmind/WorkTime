@@ -3,29 +3,29 @@
 Follow these steps to connect your WorkTime app to a live Firebase backend.
 
 ## 1. Create Project
-- [ ] Go to the [Firebase Console](https://console.firebase.google.com/).
-- [ ] Click **Add project**.
-- [ ] Name it `WorkTime` (or similar) and follow the setup steps.
-- [ ] (Optional) Disable Google Analytics if you want a simpler setup.
+- [x] Go to the [Firebase Console](https://console.firebase.google.com/).
+- [x] Click **Add project**.
+- [x] Name it `WorkTime` (or similar) and follow the setup steps.
+- [x] (Optional) Disable Google Analytics if you want a simpler setup.
 
 ## 2. Enable Authentication
-- [ ] In the project sidebar, go to **Build** > **Authentication**.
-- [ ] Click **Get started**.
-- [ ] Select the **Sign-in method** tab.
-- [ ] Click **Email/Password**.
-- [ ] Enable the **Email/Password** switch (leave "Email link" disabled).
-- [ ] Click **Save**.
+- [x] In the project sidebar, go to **Build** > **Authentication**.
+- [x] Click **Get started**.
+- [x] Select the **Sign-in method** tab.
+- [x] Click **Email/Password**.
+- [x] Enable the **Email/Password** switch (leave "Email link" disabled).
+- [x] Click **Save**.
 
 ## 3. Create Firestore Database
-- [ ] In the sidebar, go to **Build** > **Firestore Database**.
-- [ ] Click **Create database**.
-- [ ] Choose a **Location** close to you (e.g., `eur3` for Europe, `us-central1` for US).
-- [ ] Select **Start in production mode**.
-- [ ] Click **Create**.
+- [x] In the sidebar, go to **Build** > **Firestore Database**.
+- [x] Click **Create database**.
+- [x] Choose a **Location** close to you (e.g., `eur3` for Europe, `us-central1` for US).
+- [x] Select **Start in production mode**.
+- [x] Click **Create**.
 
 ## 4. Set Security Rules
-- [ ] In the Firestore Database page, go to the **Rules** tab.
-- [ ] Replace the existing rules with the following code to ensure users can only access their own data:
+- [x] In the Firestore Database page, go to the **Rules** tab.
+- [x] Replace the existing rules with the following code to ensure users can only access their own data:
 
 ```javascript
 rules_version = '2';
@@ -45,18 +45,18 @@ service cloud.firestore {
   }
 }
 ```
-- [ ] Click **Publish**.
+- [x] Click **Publish**.
 
 ## 5. Get Configuration Keys
-- [ ] Click the **Gear icon** (Project settings) in the top left sidebar.
-- [ ] Scroll down to the **Your apps** section.
-- [ ] Click the **</> (Web)** icon.
-- [ ] Register the app (Nickname: "WorkTime Web").
-- [ ] **Copy** the values from the `firebaseConfig` object shown on screen.
+- [x] Click the **Gear icon** (Project settings) in the top left sidebar.
+- [x] Scroll down to the **Your apps** section.
+- [x] Click the **</> (Web)** icon.
+- [x] Register the app (Nickname: "WorkTime Web").
+- [x] **Copy** the values from the `firebaseConfig` object shown on screen.
 
 ## 6. Configure Local Environment
-- [ ] In your project folder, duplicate `.env.example` and name it `.env`.
-- [ ] Paste your copied values into the `.env` file:
+- [x] In your project folder, duplicate `.env.example` and name it `.env`.
+- [x] Paste your copied values into the `.env` file:
 
 ```env
 VITE_FIREBASE_API_KEY=AIzaSy...
@@ -68,9 +68,9 @@ VITE_FIREBASE_APP_ID=1:123456...
 ```
 
 ## 7. Run the App
-- [ ] Restart your development server to load the new env vars:
+- [x] Restart your development server to load the new env vars:
   ```bash
   npm run dev
   ```
-- [ ] Open the app in your browser.
+- [x] Open the app in your browser.
 - [ ] Try to **Login** (since it's a new project, you'll need to create a user manually in the Auth tab or handle sign-up errors if we haven't built a sign-up form yet. *Note: The current Login page calls `signInWithEmailAndPassword`. For a new user, you can manually create a user in the Firebase Console > Authentication > Users tab first.*)
