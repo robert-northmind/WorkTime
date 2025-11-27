@@ -62,6 +62,44 @@ A personal, multi-user-capable work time-tracking web application built with Rea
 *   `src/types`: TypeScript type definitions.
 *   `tests`: Unit and integration tests.
 
+## Deployment
+
+The app is deployed to Firebase Hosting at:
+**https://worktime-ac19a.web.app**
+
+### Deploying Changes
+
+To deploy new changes to production:
+
+1.  **Build the app**:
+    ```bash
+    npm run build
+    ```
+
+2.  **Deploy to Firebase**:
+    ```bash
+    firebase deploy
+    ```
+    This will deploy:
+    - Your web app (from the `dist` folder)
+    - Firestore security rules
+    - Firestore indexes
+
+3.  **Deploy only hosting** (if you only changed frontend code):
+    ```bash
+    firebase deploy --only hosting
+    ```
+
+**What gets deployed:**
+- `firebase deploy` deploys: web app + Firestore rules + Firestore indexes
+- `firebase deploy --only hosting` deploys: web app only (faster)
+
+**When to use which:**
+- Use `--only hosting` for UI changes, bug fixes, new features (99% of the time)
+- Use full `firebase deploy` when you modify `firestore.rules` or `firestore.indexes.json`
+
+> **Note**: Make sure you're logged in with the correct Firebase account (`firebase login`) and linked to the right project (`firebase use default`).
+
 ## License
 
 [MIT License](LICENSE)

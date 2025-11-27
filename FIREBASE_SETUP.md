@@ -73,4 +73,38 @@ VITE_FIREBASE_APP_ID=1:123456...
   npm run dev
   ```
 - [x] Open the app in your browser.
-- [ ] Try to **Login** (since it's a new project, you'll need to create a user manually in the Auth tab or handle sign-up errors if we haven't built a sign-up form yet. *Note: The current Login page calls `signInWithEmailAndPassword`. For a new user, you can manually create a user in the Firebase Console > Authentication > Users tab first.*)
+- [x] Try to **Login** (since it's a new project, you'll need to create a user manually in the Auth tab or handle sign-up errors if we haven't built a sign-up form yet. *Note: The current Login page calls `signInWithEmailAndPassword`. For a new user, you can manually create a user in the Firebase Console > Authentication > Users tab first.*)
+
+## 8. Deploy to Firebase Hosting (Optional)
+
+If you want to host your app on the internet:
+
+1.  **Install Firebase CLI**:
+    ```bash
+    npm install -g firebase-tools
+    ```
+2.  **Login**:
+    ```bash
+    firebase login
+    ```
+3.  **Link Project**:
+    *   Since we already created the config files, you just need to tell the CLI which project to use.
+    *   Run: `firebase use --add`
+    *   Select your **WorkTime** project from the list.
+    *   Type `default` when asked for an alias.
+4.  **Deploy**:
+    ```bash
+    npm run build
+    firebase deploy
+    ```
+    This will deploy your:
+    *   Web app (from `dist` folder)
+    *   Firestore Rules (`firestore.rules`)
+    *   Firestore Indexes (`firestore.indexes.json`)
+    *   Storage Rules (`storage.rules`)
+
+### Troubleshooting: Wrong Account?
+If `firebase login` says you are logged in as the wrong user (e.g. your work email instead of personal):
+1.  **Logout**: `firebase logout`
+2.  **Login again**: `firebase login` (and select your personal account in the browser)
+    *   *Tip: You can also use `firebase login:add` to save multiple accounts and switch between them with `firebase login:use <email>`.*
