@@ -27,3 +27,6 @@ dist-ssr
 
 # Firebase cache
 .firebase/
+
+# Internal documentation
+walkthrough.md
