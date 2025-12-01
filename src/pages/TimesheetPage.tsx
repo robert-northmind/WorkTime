@@ -4,6 +4,7 @@ import { getCurrentUser } from '../services/auth/AuthService';
 import { getEntries, getUser } from '../services/firestore/FirestoreService';
 import { calculateDailyBalance } from '../services/balance/BalanceService';
 import { formatHours } from '../services/time/TimeService';
+import { formatTimeDisplay } from '../services/time/TimeFormatService';
 import type { FirestoreDailyEntry, CustomPTOType } from '../types/firestore';
 
 // Helper to get ISO week number
@@ -45,6 +46,7 @@ export const TimesheetPage: React.FC = () => {
   }]);
   const [customPTO, setCustomPTO] = useState<CustomPTOType[]>([]);
   const [ptoColors, setPtoColors] = useState<Record<string, string>>({});
+  const [timeFormat, setTimeFormat] = useState<'12h' | '24h'>('24h');
   const [loading, setLoading] = useState(false);
   
   const user = getCurrentUser();
@@ -69,6 +71,9 @@ export const TimesheetPage: React.FC = () => {
         }
         if (userDoc.settings.ptoColors) {
           setPtoColors(userDoc.settings.ptoColors);
+        }
+        if (userDoc.settings.timeFormat) {
+          setTimeFormat(userDoc.settings.timeFormat);
         }
       }
 
@@ -351,7 +356,7 @@ export const TimesheetPage: React.FC = () => {
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {entry.status === 'work' ? `${entry.startTime} - ${entry.endTime}` : '-'}
+                              {entry.status === 'work' ? `${formatTimeDisplay(entry.startTime, timeFormat)} - ${formatTimeDisplay(entry.endTime, timeFormat)}` : '-'}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm">
                               {entry.status === 'work' ? (
@@ -501,7 +506,7 @@ export const TimesheetPage: React.FC = () => {
 
                             <div className="flex items-center justify-between text-sm">
                               <div className="text-gray-500">
-                                {entry.status === 'work' ? `${entry.startTime} - ${entry.endTime}` : '-'}
+                                {entry.status === 'work' ? `${formatTimeDisplay(entry.startTime, timeFormat)} - ${formatTimeDisplay(entry.endTime, timeFormat)}` : '-'}
                               </div>
                               {entry.status === 'work' && (
                                 <div className={`${isPositive ? 'text-green-600' : isZero ? 'text-gray-400' : 'text-red-600'} font-medium`}>

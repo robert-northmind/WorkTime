@@ -18,6 +18,7 @@ export interface UserDocument {
     yearlyComments?: Record<string, string>; // Year -> Comment
     customPTO?: CustomPTOType[];
     ptoColors?: Record<string, string>; // type -> color
+    timeFormat?: '12h' | '24h'; // Time display format (default: '24h')
   };
   createdAt: string;
 }

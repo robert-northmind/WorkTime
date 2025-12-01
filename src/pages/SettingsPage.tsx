@@ -27,6 +27,7 @@ export const SettingsPage: React.FC = () => {
     holiday: '#fd3fae',
     sick: '#f98080',
   });
+  const [timeFormat, setTimeFormat] = useState<'12h' | '24h'>('24h');
 
   // Form State for Selected Year
   const [weeklyHours, setWeeklyHours] = useState(40);
@@ -75,6 +76,9 @@ export const SettingsPage: React.FC = () => {
         }
         if (userDoc.settings.ptoColors) {
           setPtoColors(prev => ({ ...prev, ...userDoc.settings.ptoColors }));
+        }
+        if (userDoc.settings.timeFormat) {
+          setTimeFormat(userDoc.settings.timeFormat);
         }
       }
     } catch (error) {
@@ -198,6 +202,7 @@ export const SettingsPage: React.FC = () => {
         yearlyComments, // Preserve current yearly settings
         customPTO,
         ptoColors,
+        timeFormat,
       };
 
       await saveUser({
@@ -320,6 +325,37 @@ export const SettingsPage: React.FC = () => {
           <div className="border-b border-gray-200 pb-4">
             <h3 className="text-lg font-medium text-gray-900">Global Configuration</h3>
             <p className="mt-1 text-xs text-gray-500">These settings apply to all years.</p>
+          </div>
+
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 mb-3 uppercase tracking-wider">Time Format</h4>
+            <div className="bg-white border border-gray-200 rounded-md p-4">
+              <p className="text-sm text-gray-600 mb-3">Choose how times are displayed throughout the app:</p>
+              <div className="space-y-2">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="timeFormat"
+                    value="24h"
+                    checked={timeFormat === '24h'}
+                    onChange={(e) => setTimeFormat(e.target.value as '12h' | '24h')}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">24-hour format (e.g., 13:30)</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="timeFormat"
+                    value="12h"
+                    checked={timeFormat === '12h'}
+                    onChange={(e) => setTimeFormat(e.target.value as '12h' | '24h')}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">12-hour format (e.g., 1:30 PM)</span>
+                </label>
+              </div>
+            </div>
           </div>
 
           <div>

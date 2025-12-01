@@ -47,14 +47,15 @@ describe('TimeService', () => {
   });
 
   describe('formatHours', () => {
-    it('formats minutes as decimal hours', () => {
-      expect(formatHours(90)).toBe('1.50');
-      expect(formatHours(60)).toBe('1.00');
-      expect(formatHours(30)).toBe('0.50');
+    it('formats minutes as hours:minutes', () => {
+      expect(formatHours(90)).toBe('1:30');
+      expect(formatHours(60)).toBe('1:00');
+      expect(formatHours(30)).toBe('0:30');
     });
 
-    it('rounds to 2 decimal places', () => {
-      expect(formatHours(20)).toBe('0.33'); // 20/60 = 0.3333...
+    it('handles negative values', () => {
+      expect(formatHours(-45)).toBe('-0:45');
+      expect(formatHours(-90)).toBe('-1:30');
     });
   });
 });

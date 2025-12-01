@@ -5,6 +5,7 @@ import { getUser } from '../services/firestore/FirestoreService';
 import { SuccessConfetti } from './SuccessConfetti';
 import { DeleteEffect } from './DeleteEffect';
 import { minutesToTime, timeToMinutes } from '../services/time/TimeService';
+import { getTimeInputValue } from '../services/time/TimeFormatService';
 
 interface DailyEntryFormProps {
   date: string;
@@ -138,7 +139,7 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialDat
               <label className="block text-sm font-medium text-gray-700">Start Time</label>
               <input
                 type="time"
-                value={startTime}
+                value={getTimeInputValue(startTime)}
                 onChange={(e) => setStartTime(e.target.value)}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2"
               />
@@ -148,7 +149,7 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialDat
               <label className="block text-sm font-medium text-gray-700">End Time</label>
               <input
                 type="time"
-                value={endTime}
+                value={getTimeInputValue(endTime)}
                 onChange={(e) => setEndTime(e.target.value)}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2"
               />
