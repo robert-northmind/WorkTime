@@ -459,10 +459,12 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {/* Stress Test / Developer Zone */}
-      <div className="mt-12 pt-8 border-t border-gray-200">
-        <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">Advanced</h3>
-        <DeveloperZone user={user} selectedYear={selectedYear} />
-      </div>
+      {import.meta.env.DEV && (
+        <div className="mt-12 pt-8 border-t border-gray-200">
+          <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">Advanced</h3>
+          <DeveloperZone user={user} selectedYear={selectedYear} />
+        </div>
+      )}
     </div>
   );
 };
