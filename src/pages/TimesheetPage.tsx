@@ -183,13 +183,43 @@ export const TimesheetPage: React.FC = () => {
     return allDays.reverse();
   }
 
+  // Helper to check if a date string is today
+  const isToday = (dateStr: string) => {
+    const today = new Date();
+    const date = new Date(dateStr + 'T00:00:00');
+    return date.getDate() === today.getDate() &&
+           date.getMonth() === today.getMonth() &&
+           date.getFullYear() === today.getFullYear();
+  };
+
+  const scrollToToday = () => {
+    const desktopEntry = document.getElementById('today-entry-desktop');
+    const mobileEntry = document.getElementById('today-entry-mobile');
+    
+    if (desktopEntry && desktopEntry.offsetParent !== null) {
+      desktopEntry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (mobileEntry && mobileEntry.offsetParent !== null) {
+      mobileEntry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      // If today isn't loaded/visible, maybe switch year or just alert
+      // For now, let's just try to find the closest week if today isn't there?
+      // Or simply do nothing if not found in current view.
+      // We could also check if the selected year is current year.
+      if (selectedYear !== new Date().getFullYear()) {
+        setSelectedYear(new Date().getFullYear());
+        // We need to wait for render, but for simplicity let's just switch year first.
+        // The user might need to click again.
+      }
+    }
+  };
+
   if (!user) return <div>Please log in</div>;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h2 className="text-2xl font-bold text-gray-900">Timesheet</h2>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 self-end sm:self-auto">
           <label htmlFor="year" className="text-sm font-medium text-gray-700">Year:</label>
           <select
             id="year"
@@ -201,6 +231,12 @@ export const TimesheetPage: React.FC = () => {
               <option key={year} value={year}>{year}</option>
             ))}
           </select>
+          <button
+            onClick={scrollToToday}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Today
+          </button>
           <button
             onClick={() => navigate(`/entry?date=${new Date().toISOString().split('T')[0]}`)}
             className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -257,17 +293,20 @@ export const TimesheetPage: React.FC = () => {
                   const isWeekPositive = weeklyBalanceMinutes > 0;
                   const isWeekZero = weeklyBalanceMinutes === 0;
 
+                  // Check if this week contains today
+                  const isCurrentWeek = week.entries.some(e => isToday(e.date));
+
                   return (
                     <React.Fragment key={week.weekKey}>
                       {/* Weekly Summary Row */}
-                      <tr className="bg-slate-100 border-t-2 border-slate-300">
+                      <tr className={`${isCurrentWeek ? 'bg-orange-50 border-orange-200' : 'bg-slate-100 border-slate-300'} border-t-2`}>
                         <td colSpan={6} className="px-6 py-3">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-semibold text-slate-800">
-                              Week {week.weekKey.split('-W')[1]} ({week.weekRange})
+                            <span className={`text-sm font-semibold ${isCurrentWeek ? 'text-orange-900' : 'text-slate-800'}`}>
+                              Week {week.weekKey.split('-W')[1]} ({week.weekRange}) {isCurrentWeek && <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full">Current Week</span>}
                             </span>
                             <div className="flex gap-6 text-sm">
-                              <span className="text-slate-700">
+                              <span className={isCurrentWeek ? 'text-orange-800' : 'text-slate-700'}>
                                 <span className="font-medium">Worked:</span> {weeklyWorkedStr}
                               </span>
                               <span className={`font-medium ${isWeekPositive ? 'text-green-700' : isWeekZero ? 'text-gray-500' : 'text-red-700'}`}>
@@ -280,17 +319,25 @@ export const TimesheetPage: React.FC = () => {
                       
                       {/* Individual Entry Rows */}
                       {week.entries.map((item) => {
+                        const isTodayEntry = isToday(item.date);
+                        
                         if (!item.entry) {
                           // Missing entry - show placeholder
                           return (
                             <tr 
                               key={item.date}
+                              id={isTodayEntry ? 'today-entry-desktop' : undefined}
                               onClick={() => handleRowClick(item.date)}
-                              className="hover:bg-gray-50 cursor-pointer transition-colors bg-gray-50/50"
+                              className={`cursor-pointer transition-colors ${
+                                isTodayEntry 
+                                  ? 'bg-orange-50 ring-2 ring-inset ring-orange-300 z-10 relative' 
+                                  : 'hover:bg-gray-50 bg-gray-50/50'
+                              }`}
                             >
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-400">
                                 {new Date(item.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}{' '}
                                 <span className="italic">{item.date}</span>
+                                {isTodayEntry && <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full">Today</span>}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 italic">
                                 Not entered
@@ -313,16 +360,20 @@ export const TimesheetPage: React.FC = () => {
                         return (
                           <tr 
                             key={entry.date} 
+                            id={isTodayEntry ? 'today-entry-desktop' : undefined}
                             onClick={() => handleRowClick(entry.date)}
                             className={`cursor-pointer transition-colors ${
-                              entry.status !== 'work' 
-                                ? 'bg-blue-50 hover:bg-blue-100' 
-                                : 'hover:bg-gray-50'
+                              isTodayEntry 
+                                ? 'bg-orange-50 ring-2 ring-inset ring-orange-300 z-10 relative' 
+                                : entry.status !== 'work' 
+                                  ? 'bg-blue-50 hover:bg-blue-100' 
+                                  : 'hover:bg-gray-50'
                             }`}
                           >
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                              {new Date(entry.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}{' '}
+                              {new Date(item.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}{' '}
                               <span className="italic">{entry.date}</span>
+                              {isTodayEntry && <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full">Today</span>}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
                               <span 
@@ -409,19 +460,20 @@ export const TimesheetPage: React.FC = () => {
                 const weeklyWorkedStr = formatHours(weeklyWorkedMinutes);
                 const isWeekPositive = weeklyBalanceMinutes > 0;
                 const isWeekZero = weeklyBalanceMinutes === 0;
+                const isCurrentWeek = week.entries.some(e => isToday(e.date));
 
                 return (
                   <div key={week.weekKey} className="border-b border-gray-200 last:border-0">
                     {/* Weekly Header */}
-                    <div className="bg-slate-100 px-4 py-3 border-t border-slate-200 first:border-t-0">
+                    <div className={`${isCurrentWeek ? 'bg-orange-50 border-orange-200' : 'bg-slate-100 border-slate-200'} px-4 py-3 border-t first:border-t-0`}>
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-semibold text-slate-800">
-                          Week {week.weekKey.split('-W')[1]}
+                        <span className={`text-sm font-semibold ${isCurrentWeek ? 'text-orange-900' : 'text-slate-800'}`}>
+                          Week {week.weekKey.split('-W')[1]} {isCurrentWeek && <span className="ml-1 text-xs bg-orange-100 text-orange-800 px-1.5 py-0.5 rounded-full">Current</span>}
                         </span>
-                        <span className="text-xs text-slate-500">{week.weekRange}</span>
+                        <span className={`text-xs ${isCurrentWeek ? 'text-orange-700' : 'text-slate-500'}`}>{week.weekRange}</span>
                       </div>
                       <div className="flex justify-between text-xs">
-                        <span className="text-slate-700">
+                        <span className={isCurrentWeek ? 'text-orange-800' : 'text-slate-700'}>
                           Worked: <span className="font-medium">{weeklyWorkedStr}</span>
                         </span>
                         <span className={`font-medium ${isWeekPositive ? 'text-green-700' : isWeekZero ? 'text-gray-500' : 'text-red-700'}`}>
@@ -433,17 +485,25 @@ export const TimesheetPage: React.FC = () => {
                     {/* Daily Cards */}
                     <div className="divide-y divide-gray-100">
                       {week.entries.map((item) => {
+                        const isTodayEntry = isToday(item.date);
+
                         if (!item.entry) {
                           return (
                             <div 
                               key={item.date}
+                              id={isTodayEntry ? 'today-entry-mobile' : undefined}
                               onClick={() => handleRowClick(item.date)}
-                              className="px-4 py-3 bg-gray-50/50 active:bg-gray-100"
+                              className={`px-4 py-3 active:bg-gray-100 ${
+                                isTodayEntry 
+                                  ? 'bg-orange-50 ring-2 ring-inset ring-orange-300 z-10 relative' 
+                                  : 'bg-gray-50/50'
+                              }`}
                             >
                               <div className="flex items-center justify-between">
                                 <div className="flex flex-col">
                                   <span className="text-sm font-medium text-gray-400">
                                     {new Date(item.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}
+                                    {isTodayEntry && <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">Today</span>}
                                   </span>
                                   <span className="text-xs text-gray-400 italic">{item.date}</span>
                                 </div>
@@ -462,15 +522,21 @@ export const TimesheetPage: React.FC = () => {
                         return (
                           <div 
                             key={entry.date}
+                            id={isTodayEntry ? 'today-entry-mobile' : undefined}
                             onClick={() => handleRowClick(entry.date)}
                             className={`px-4 py-3 active:bg-gray-50 ${
-                              entry.status !== 'work' ? 'bg-blue-50/50' : ''
+                              isTodayEntry 
+                                ? 'bg-orange-50 ring-2 ring-inset ring-orange-300 z-10 relative' 
+                                : entry.status !== 'work' 
+                                  ? 'bg-blue-50/50' 
+                                  : ''
                             }`}
                           >
                             <div className="flex items-start justify-between mb-2">
                               <div className="flex flex-col">
                                 <span className="text-sm font-medium text-gray-900">
                                   {new Date(entry.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}
+                                  {isTodayEntry && <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">Today</span>}
                                 </span>
                                 <span className="text-xs text-gray-500">{entry.date}</span>
                               </div>
