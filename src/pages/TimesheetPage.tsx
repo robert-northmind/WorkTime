@@ -452,6 +452,12 @@ export const TimesheetPage: React.FC = () => {
                           </th>
                           <th
                             scope="col"
+                            className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20"
+                          >
+                            Lunch
+                          </th>
+                          <th
+                            scope="col"
                             className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24"
                           >
                             Extra
@@ -505,6 +511,9 @@ export const TimesheetPage: React.FC = () => {
                                   -
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                                  -
+                                </td>
+                                <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                                   -
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
@@ -632,6 +641,12 @@ export const TimesheetPage: React.FC = () => {
                                 ) : (
                                   <span className="text-gray-400">-</span>
                                 )}
+                              </td>
+                              <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {entry.status === "work" &&
+                                entry.lunchMinutes > 0
+                                  ? formatHours(entry.lunchMinutes)
+                                  : "-"}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 {entry.extraHours
