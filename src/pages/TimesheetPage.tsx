@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCurrentUser } from '../services/auth/AuthService';
 import { getEntries, getUser } from '../services/firestore/FirestoreService';
@@ -6,6 +6,8 @@ import { calculateDailyBalance } from '../services/balance/BalanceService';
 import { formatHours } from '../services/time/TimeService';
 import { formatTimeDisplay } from '../services/time/TimeFormatService';
 import type { FirestoreDailyEntry, CustomPTOType } from '../types/firestore';
+
+const SCROLL_POSITION_KEY = 'timesheet-scroll-position';
 
 // Helper to get ISO week number
 const getWeekNumber = (dateStr: string): { year: number; week: number } => {
@@ -48,8 +50,24 @@ export const TimesheetPage: React.FC = () => {
   const [ptoColors, setPtoColors] = useState<Record<string, string>>({});
   const [timeFormat, setTimeFormat] = useState<'12h' | '24h'>('24h');
   const [loading, setLoading] = useState(false);
+  const hasRestoredScroll = useRef(false);
   
   const user = getCurrentUser();
+
+  // Restore scroll position after data loads
+  useEffect(() => {
+    if (!loading && entries.length > 0 && !hasRestoredScroll.current) {
+      const savedPosition = sessionStorage.getItem(SCROLL_POSITION_KEY);
+      if (savedPosition) {
+        // Small delay to ensure DOM has rendered
+        requestAnimationFrame(() => {
+          window.scrollTo(0, parseInt(savedPosition, 10));
+        });
+        sessionStorage.removeItem(SCROLL_POSITION_KEY);
+      }
+      hasRestoredScroll.current = true;
+    }
+  }, [loading, entries]);
 
   useEffect(() => {
     if (!user) return;
@@ -91,6 +109,8 @@ export const TimesheetPage: React.FC = () => {
   };
 
   const handleRowClick = (date: string) => {
+    // Save scroll position before navigating
+    sessionStorage.setItem(SCROLL_POSITION_KEY, window.scrollY.toString());
     navigate(`/entry?date=${date}`);
   };
 
@@ -238,7 +258,10 @@ export const TimesheetPage: React.FC = () => {
             Today
           </button>
           <button
-            onClick={() => navigate(`/entry?date=${new Date().toISOString().split('T')[0]}`)}
+            onClick={() => {
+              sessionStorage.setItem(SCROLL_POSITION_KEY, window.scrollY.toString());
+              navigate(`/entry?date=${new Date().toISOString().split('T')[0]}`);
+            }}
             className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
