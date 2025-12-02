@@ -317,8 +317,22 @@ export const TimesheetPage: React.FC = () => {
           {/* Desktop Table View */}
           <div className="hidden sm:block space-y-8">
             {entries.length === 0 ? (
-              <div className="text-center py-10 text-gray-500 bg-white shadow rounded-lg">
-                No entries found for {selectedYear}
+              <div className="text-center py-12 text-gray-500 bg-gradient-to-br from-slate-50 to-white shadow-lg rounded-xl border border-slate-100">
+                <svg
+                  className="mx-auto h-12 w-12 text-slate-300 mb-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+                <p className="text-lg font-medium text-gray-600">No entries found for {selectedYear}</p>
+                <p className="text-sm text-gray-400 mt-1">Start by adding your first time entry</p>
               </div>
             ) : (
               groupedByWeek.map((week) => {
@@ -344,133 +358,199 @@ export const TimesheetPage: React.FC = () => {
                 // Check if this week contains today
                 const isCurrentWeek = week.entries.some((e) => isToday(e.date));
 
+                // Determine color theme based on balance
+                const balanceTheme = isWeekPositive
+                  ? "emerald"
+                  : isWeekZero
+                  ? "slate"
+                  : "rose";
+
                 return (
                   <div
                     key={week.weekKey}
-                    className={`bg-white shadow-lg overflow-hidden sm:rounded-lg border-2 ${
+                    className={`relative overflow-hidden shadow-lg sm:rounded-xl transition-all duration-300 hover:shadow-xl ${
                       isCurrentWeek
-                        ? "border-orange-300 ring-2 ring-orange-200"
-                        : "border-gray-300"
+                        ? "ring-2 ring-amber-400 ring-offset-2"
+                        : ""
+                    } ${
+                      balanceTheme === "emerald"
+                        ? "bg-gradient-to-br from-emerald-50/80 via-white to-white border-t-4 border-emerald-500"
+                        : balanceTheme === "rose"
+                        ? "bg-gradient-to-br from-rose-50/80 via-white to-white border-t-4 border-rose-500"
+                        : "bg-gradient-to-br from-slate-50/80 via-white to-white border-t-4 border-slate-400"
                     }`}
                   >
+                    {/* Decorative background element */}
+                    <div
+                      className={`absolute top-0 right-0 w-48 h-48 rounded-full -translate-y-1/2 translate-x-1/4 ${
+                        balanceTheme === "emerald"
+                          ? "bg-emerald-500/5"
+                          : balanceTheme === "rose"
+                          ? "bg-rose-500/5"
+                          : "bg-slate-500/5"
+                      }`}
+                    />
+
                     {/* Week Header */}
                     <div
-                      className={`${
+                      className={`relative px-6 py-4 border-b flex items-center justify-between ${
                         isCurrentWeek
-                          ? "bg-orange-100 border-l-4 border-l-orange-500"
-                          : "bg-slate-200 border-l-4 border-l-slate-500"
-                      } px-6 py-4 border-b border-gray-200 flex items-center justify-between`}
+                          ? "bg-amber-50/80 border-amber-200"
+                          : balanceTheme === "emerald"
+                          ? "bg-emerald-50/50 border-emerald-100"
+                          : balanceTheme === "rose"
+                          ? "bg-rose-50/50 border-rose-100"
+                          : "bg-slate-50/50 border-slate-200"
+                      }`}
                     >
                       <div className="flex items-center gap-3">
-                        <svg
-                          className={`w-5 h-5 ${
-                            isCurrentWeek ? "text-orange-600" : "text-slate-600"
-                          }`}
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                          />
-                        </svg>
-                        <h3
-                          className={`text-lg font-bold ${
-                            isCurrentWeek ? "text-orange-900" : "text-slate-800"
+                        <div
+                          className={`p-2 rounded-lg ${
+                            isCurrentWeek
+                              ? "bg-amber-100"
+                              : balanceTheme === "emerald"
+                              ? "bg-emerald-100"
+                              : balanceTheme === "rose"
+                              ? "bg-rose-100"
+                              : "bg-slate-100"
                           }`}
                         >
-                          Week {week.weekKey.split("-W")[1]}
-                        </h3>
-                        <span
-                          className={`text-sm font-medium ${
-                            isCurrentWeek ? "text-orange-700" : "text-slate-600"
-                          }`}
-                        >
-                          {week.weekRange}
-                        </span>
+                          <svg
+                            className={`w-5 h-5 ${
+                              isCurrentWeek
+                                ? "text-amber-600"
+                                : balanceTheme === "emerald"
+                                ? "text-emerald-600"
+                                : balanceTheme === "rose"
+                                ? "text-rose-600"
+                                : "text-slate-600"
+                            }`}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            />
+                          </svg>
+                        </div>
+                        <div>
+                          <h3
+                            className={`text-lg font-bold ${
+                              isCurrentWeek
+                                ? "text-amber-900"
+                                : "text-gray-900"
+                            }`}
+                          >
+                            Week {week.weekKey.split("-W")[1]}
+                          </h3>
+                          <span className="text-sm text-gray-500">
+                            {week.weekRange}
+                          </span>
+                        </div>
                         {isCurrentWeek && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-200 text-orange-800">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-200 text-amber-800 shadow-sm">
                             Current Week
                           </span>
                         )}
                       </div>
-                      <div className="flex gap-6 text-sm">
-                        <span
-                          className={
-                            isCurrentWeek ? "text-orange-800" : "text-slate-700"
-                          }
-                        >
-                          <span className="font-semibold">Worked:</span>{" "}
-                          {weeklyWorkedStr}
-                        </span>
-                        <span
-                          className={`font-semibold ${
-                            isWeekPositive
-                              ? "text-green-700"
-                              : isWeekZero
-                              ? "text-gray-500"
-                              : "text-red-700"
+                      <div className="flex gap-4">
+                        <div className="text-right">
+                          <div className="text-xs text-gray-500 uppercase tracking-wide">
+                            Worked
+                          </div>
+                          <div className="text-lg font-bold text-gray-900">
+                            {weeklyWorkedStr}
+                          </div>
+                        </div>
+                        <div
+                          className={`text-right px-4 py-1 rounded-lg ${
+                            balanceTheme === "emerald"
+                              ? "bg-emerald-100"
+                              : balanceTheme === "rose"
+                              ? "bg-rose-100"
+                              : "bg-slate-100"
                           }`}
                         >
-                          <span className="font-semibold">Balance:</span>{" "}
-                          {isWeekPositive ? "+" : ""}
-                          {weeklyBalanceStr}
-                        </span>
+                          <div
+                            className={`text-xs uppercase tracking-wide ${
+                              balanceTheme === "emerald"
+                                ? "text-emerald-600"
+                                : balanceTheme === "rose"
+                                ? "text-rose-600"
+                                : "text-slate-500"
+                            }`}
+                          >
+                            Balance
+                          </div>
+                          <div
+                            className={`text-lg font-black ${
+                              balanceTheme === "emerald"
+                                ? "text-emerald-600"
+                                : balanceTheme === "rose"
+                                ? "text-rose-600"
+                                : "text-slate-500"
+                            }`}
+                          >
+                            {isWeekPositive ? "+" : ""}
+                            {weeklyBalanceStr}
+                          </div>
+                        </div>
                       </div>
                     </div>
 
                     {/* Week Entries Table */}
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
+                    <table className="relative min-w-full">
+                      <thead>
+                        <tr className="border-b border-gray-200">
                           <th
                             scope="col"
-                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48"
+                            className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-48"
                           >
                             Date
                           </th>
                           <th
                             scope="col"
-                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32"
+                            className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-32"
                           >
                             Status
                           </th>
                           <th
                             scope="col"
-                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32"
+                            className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-32"
                           >
                             Hours
                           </th>
                           <th
                             scope="col"
-                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24"
+                            className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-24"
                           >
                             Balance
                           </th>
                           <th
                             scope="col"
-                            className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20"
+                            className="hidden lg:table-cell px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-20"
                           >
                             Lunch
                           </th>
                           <th
                             scope="col"
-                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24"
+                            className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-24"
                           >
                             Extra
                           </th>
                           <th
                             scope="col"
-                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                            className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
                           >
                             Notes
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody className="divide-y divide-gray-100">
                         {week.entries.map((item) => {
                           const isTodayEntry = isToday(item.date);
 
@@ -485,10 +565,10 @@ export const TimesheetPage: React.FC = () => {
                                     : undefined
                                 }
                                 onClick={() => handleRowClick(item.date)}
-                                className={`cursor-pointer transition-colors ${
+                                className={`cursor-pointer transition-all duration-200 ${
                                   isTodayEntry
-                                    ? "bg-orange-50 ring-2 ring-inset ring-orange-300 z-10 relative"
-                                    : "hover:bg-gray-50 bg-gray-50/50"
+                                    ? "bg-amber-50 ring-2 ring-inset ring-amber-300 z-10 relative"
+                                    : "hover:bg-gray-50/80 bg-gray-50/30"
                                 }`}
                               >
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-400">
@@ -499,7 +579,7 @@ export const TimesheetPage: React.FC = () => {
                                   })}{" "}
                                   <span className="italic">{item.date}</span>
                                   {isTodayEntry && (
-                                    <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full">
+                                    <span className="ml-2 text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-semibold">
                                       Today
                                     </span>
                                   )}
@@ -545,12 +625,12 @@ export const TimesheetPage: React.FC = () => {
                                 isTodayEntry ? "today-entry-desktop" : undefined
                               }
                               onClick={() => handleRowClick(entry.date)}
-                              className={`cursor-pointer transition-colors ${
+                              className={`cursor-pointer transition-all duration-200 ${
                                 isTodayEntry
-                                  ? "bg-orange-50 border-y-2 border-orange-300 z-10 relative"
+                                  ? "bg-amber-50 ring-2 ring-inset ring-amber-300 z-10 relative"
                                   : entry.status !== "work"
-                                  ? "bg-blue-50 hover:bg-blue-100"
-                                  : "hover:bg-gray-50"
+                                  ? "bg-sky-50/50 hover:bg-sky-50"
+                                  : "hover:bg-gray-50/80"
                               }`}
                             >
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -561,7 +641,7 @@ export const TimesheetPage: React.FC = () => {
                                 })}{" "}
                                 <span className="italic">{entry.date}</span>
                                 {isTodayEntry && (
-                                  <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full">
+                                  <span className="ml-2 text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-semibold">
                                     Today
                                   </span>
                                 )}
@@ -670,8 +750,22 @@ export const TimesheetPage: React.FC = () => {
           {/* Mobile Card View */}
           <div className="sm:hidden space-y-4">
             {entries.length === 0 ? (
-              <div className="px-4 py-6 text-center text-sm text-gray-500 bg-white shadow rounded-lg">
-                No entries found for {selectedYear}
+              <div className="px-4 py-8 text-center bg-gradient-to-br from-slate-50 to-white shadow-lg rounded-xl border border-slate-100">
+                <svg
+                  className="mx-auto h-10 w-10 text-slate-300 mb-3"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+                <p className="text-base font-medium text-gray-600">No entries found for {selectedYear}</p>
+                <p className="text-xs text-gray-400 mt-1">Start by adding your first time entry</p>
               </div>
             ) : (
               groupedByWeek.map((week) => {
@@ -695,93 +789,125 @@ export const TimesheetPage: React.FC = () => {
                 const isWeekZero = weeklyBalanceMinutes === 0;
                 const isCurrentWeek = week.entries.some((e) => isToday(e.date));
 
+                // Determine color theme based on balance (mobile)
+                const mobileBalanceTheme = isWeekPositive
+                  ? "emerald"
+                  : isWeekZero
+                  ? "slate"
+                  : "rose";
+
                 return (
                   <div
                     key={week.weekKey}
-                    className={`bg-white shadow-lg rounded-lg overflow-hidden border-2 ${
-                      isCurrentWeek
-                        ? "border-orange-300 ring-2 ring-orange-200"
-                        : "border-gray-300"
+                    className={`relative overflow-hidden shadow-lg rounded-xl transition-all duration-300 ${
+                      isCurrentWeek ? "ring-2 ring-amber-400 ring-offset-2" : ""
+                    } ${
+                      mobileBalanceTheme === "emerald"
+                        ? "bg-gradient-to-br from-emerald-50/80 via-white to-white border-t-4 border-emerald-500"
+                        : mobileBalanceTheme === "rose"
+                        ? "bg-gradient-to-br from-rose-50/80 via-white to-white border-t-4 border-rose-500"
+                        : "bg-gradient-to-br from-slate-50/80 via-white to-white border-t-4 border-slate-400"
                     }`}
                   >
+                    {/* Decorative background element */}
+                    <div
+                      className={`absolute top-0 right-0 w-32 h-32 rounded-full -translate-y-1/2 translate-x-1/4 ${
+                        mobileBalanceTheme === "emerald"
+                          ? "bg-emerald-500/5"
+                          : mobileBalanceTheme === "rose"
+                          ? "bg-rose-500/5"
+                          : "bg-slate-500/5"
+                      }`}
+                    />
+
                     {/* Weekly Header */}
                     <div
-                      className={`${
+                      className={`relative px-4 py-3 border-b ${
                         isCurrentWeek
-                          ? "bg-orange-100 border-l-4 border-l-orange-500"
-                          : "bg-slate-200 border-l-4 border-l-slate-500"
-                      } px-4 py-3`}
+                          ? "bg-amber-50/80 border-amber-200"
+                          : mobileBalanceTheme === "emerald"
+                          ? "bg-emerald-50/50 border-emerald-100"
+                          : mobileBalanceTheme === "rose"
+                          ? "bg-rose-50/50 border-rose-100"
+                          : "bg-slate-50/50 border-slate-200"
+                      }`}
                     >
-                      <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <svg
-                            className={`w-4 h-4 ${
+                          <div
+                            className={`p-1.5 rounded-lg ${
                               isCurrentWeek
-                                ? "text-orange-600"
-                                : "text-slate-600"
+                                ? "bg-amber-100"
+                                : mobileBalanceTheme === "emerald"
+                                ? "bg-emerald-100"
+                                : mobileBalanceTheme === "rose"
+                                ? "bg-rose-100"
+                                : "bg-slate-100"
                             }`}
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                            />
-                          </svg>
+                            <svg
+                              className={`w-4 h-4 ${
+                                isCurrentWeek
+                                  ? "text-amber-600"
+                                  : mobileBalanceTheme === "emerald"
+                                  ? "text-emerald-600"
+                                  : mobileBalanceTheme === "rose"
+                                  ? "text-rose-600"
+                                  : "text-slate-600"
+                              }`}
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                              />
+                            </svg>
+                          </div>
                           <span
                             className={`text-base font-bold ${
-                              isCurrentWeek
-                                ? "text-orange-900"
-                                : "text-slate-800"
+                              isCurrentWeek ? "text-amber-900" : "text-gray-900"
                             }`}
                           >
                             Week {week.weekKey.split("-W")[1]}
                           </span>
                           {isCurrentWeek && (
-                            <span className="text-xs bg-orange-200 text-orange-800 px-1.5 py-0.5 rounded-full font-medium">
+                            <span className="text-xs bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded-full font-semibold shadow-sm">
                               Current
                             </span>
                           )}
                         </div>
-                        <span
-                          className={`text-xs font-medium ${
-                            isCurrentWeek ? "text-orange-700" : "text-slate-600"
-                          }`}
-                        >
+                        <span className="text-xs font-medium text-gray-500">
                           {week.weekRange}
                         </span>
                       </div>
-                      <div className="flex justify-between text-xs">
-                        <span
-                          className={
-                            isCurrentWeek ? "text-orange-800" : "text-slate-700"
-                          }
-                        >
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-600">
                           Worked:{" "}
-                          <span className="font-semibold">
+                          <span className="font-bold text-gray-900">
                             {weeklyWorkedStr}
                           </span>
                         </span>
                         <span
-                          className={`font-semibold ${
-                            isWeekPositive
-                              ? "text-green-700"
-                              : isWeekZero
-                              ? "text-gray-500"
-                              : "text-red-700"
+                          className={`text-sm font-black px-2 py-0.5 rounded-md ${
+                            mobileBalanceTheme === "emerald"
+                              ? "bg-emerald-100 text-emerald-600"
+                              : mobileBalanceTheme === "rose"
+                              ? "bg-rose-100 text-rose-600"
+                              : "bg-slate-100 text-slate-500"
                           }`}
                         >
-                          Bal: {isWeekPositive ? "+" : ""}
+                          {isWeekPositive ? "+" : ""}
                           {weeklyBalanceStr}
                         </span>
                       </div>
                     </div>
 
                     {/* Daily Cards */}
-                    <div className="divide-y divide-gray-100">
+                    <div className="relative divide-y divide-gray-100/80">
                       {week.entries.map((item) => {
                         const isTodayEntry = isToday(item.date);
 
@@ -793,10 +919,10 @@ export const TimesheetPage: React.FC = () => {
                                 isTodayEntry ? "today-entry-mobile" : undefined
                               }
                               onClick={() => handleRowClick(item.date)}
-                              className={`px-4 py-3 active:bg-gray-100 ${
+                              className={`px-4 py-3 active:bg-gray-100 transition-colors ${
                                 isTodayEntry
-                                  ? "bg-orange-50 border-y-2 border-orange-300 z-10 relative"
-                                  : "bg-gray-50/50"
+                                  ? "bg-amber-50 ring-2 ring-inset ring-amber-300 z-10 relative"
+                                  : "bg-gray-50/30"
                               }`}
                             >
                               <div className="flex items-center justify-between">
@@ -808,7 +934,7 @@ export const TimesheetPage: React.FC = () => {
                                       weekday: "short",
                                     })}
                                     {isTodayEntry && (
-                                      <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full">
+                                      <span className="ml-2 text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-semibold">
                                         Today
                                       </span>
                                     )}
@@ -841,11 +967,11 @@ export const TimesheetPage: React.FC = () => {
                             key={entry.date}
                             id={isTodayEntry ? "today-entry-mobile" : undefined}
                             onClick={() => handleRowClick(entry.date)}
-                            className={`px-4 py-3 active:bg-gray-50 ${
+                            className={`px-4 py-3 active:bg-gray-50 transition-colors ${
                               isTodayEntry
-                                ? "bg-orange-50 border-y-2 border-orange-300 z-10 relative"
+                                ? "bg-amber-50 ring-2 ring-inset ring-amber-300 z-10 relative"
                                 : entry.status !== "work"
-                                ? "bg-blue-50/50"
+                                ? "bg-sky-50/30"
                                 : ""
                             }`}
                           >
@@ -858,7 +984,7 @@ export const TimesheetPage: React.FC = () => {
                                     weekday: "short",
                                   })}
                                   {isTodayEntry && (
-                                    <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full">
+                                    <span className="ml-2 text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-semibold">
                                       Today
                                     </span>
                                   )}
@@ -869,12 +995,12 @@ export const TimesheetPage: React.FC = () => {
                               </div>
                               <div className="text-right">
                                 <div
-                                  className={`text-sm font-medium ${
+                                  className={`text-sm font-bold ${
                                     isPositive
-                                      ? "text-green-700"
+                                      ? "text-emerald-600"
                                       : isZero
-                                      ? "text-gray-500"
-                                      : "text-red-700"
+                                      ? "text-gray-400"
+                                      : "text-rose-600"
                                   }`}
                                 >
                                   {isPositive ? "+" : ""}
