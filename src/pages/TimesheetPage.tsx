@@ -252,192 +252,201 @@ export const TimesheetPage: React.FC = () => {
       {loading ? (
         <div>Loading...</div>
       ) : (
-        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+        <>
           {/* Desktop Table View */}
-          <table className="min-w-full divide-y divide-gray-200 hidden sm:table">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hours</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Extra</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {entries.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
-                    No entries found for {selectedYear}
-                  </td>
-                </tr>
-              ) : (
-                groupedByWeek.map((week) => {
-                  // Calculate weekly totals
-                  let weeklyBalanceMinutes = 0;
-                  let weeklyWorkedMinutes = 0;
-                  
-                  week.entries.forEach((item) => {
-                    if (item.entry) {
-                      const result = calculateDailyBalance(item.entry, schedules);
-                      weeklyBalanceMinutes += result.balanceMinutes;
-                      if (item.entry.status === 'work') {
-                        weeklyWorkedMinutes += result.actualMinutes;
-                      }
+          <div className="hidden sm:block space-y-8">
+            {entries.length === 0 ? (
+              <div className="text-center py-10 text-gray-500 bg-white shadow rounded-lg">
+                No entries found for {selectedYear}
+              </div>
+            ) : (
+              groupedByWeek.map((week) => {
+                // Calculate weekly totals
+                let weeklyBalanceMinutes = 0;
+                let weeklyWorkedMinutes = 0;
+                
+                week.entries.forEach((item) => {
+                  if (item.entry) {
+                    const result = calculateDailyBalance(item.entry, schedules);
+                    weeklyBalanceMinutes += result.balanceMinutes;
+                    if (item.entry.status === 'work') {
+                      weeklyWorkedMinutes += result.actualMinutes;
                     }
-                  });
+                  }
+                });
 
-                  const weeklyBalanceStr = formatHours(weeklyBalanceMinutes);
-                  const weeklyWorkedStr = formatHours(weeklyWorkedMinutes);
-                  const isWeekPositive = weeklyBalanceMinutes > 0;
-                  const isWeekZero = weeklyBalanceMinutes === 0;
+                const weeklyBalanceStr = formatHours(weeklyBalanceMinutes);
+                const weeklyWorkedStr = formatHours(weeklyWorkedMinutes);
+                const isWeekPositive = weeklyBalanceMinutes > 0;
+                const isWeekZero = weeklyBalanceMinutes === 0;
 
-                  // Check if this week contains today
-                  const isCurrentWeek = week.entries.some(e => isToday(e.date));
+                // Check if this week contains today
+                const isCurrentWeek = week.entries.some(e => isToday(e.date));
 
-                  return (
-                    <React.Fragment key={week.weekKey}>
-                      {/* Weekly Summary Row */}
-                      <tr className={`${isCurrentWeek ? 'bg-orange-50 border-orange-200' : 'bg-slate-100 border-slate-300'} border-t-2`}>
-                        <td colSpan={6} className="px-6 py-3">
-                          <div className="flex items-center justify-between">
-                            <span className={`text-sm font-semibold ${isCurrentWeek ? 'text-orange-900' : 'text-slate-800'}`}>
-                              Week {week.weekKey.split('-W')[1]} ({week.weekRange}) {isCurrentWeek && <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full">Current Week</span>}
-                            </span>
-                            <div className="flex gap-6 text-sm">
-                              <span className={isCurrentWeek ? 'text-orange-800' : 'text-slate-700'}>
-                                <span className="font-medium">Worked:</span> {weeklyWorkedStr}
-                              </span>
-                              <span className={`font-medium ${isWeekPositive ? 'text-green-700' : isWeekZero ? 'text-gray-500' : 'text-red-700'}`}>
-                                <span className="font-medium">Balance:</span> {isWeekPositive ? '+' : ''}{weeklyBalanceStr}
-                              </span>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                      
-                      {/* Individual Entry Rows */}
-                      {week.entries.map((item) => {
-                        const isTodayEntry = isToday(item.date);
-                        
-                        if (!item.entry) {
-                          // Missing entry - show placeholder
+                return (
+                  <div 
+                    key={week.weekKey} 
+                    className={`bg-white shadow-lg overflow-hidden sm:rounded-lg border-2 ${isCurrentWeek ? 'border-orange-300 ring-2 ring-orange-200' : 'border-gray-300'}`}
+                  >
+                    {/* Week Header */}
+                    <div className={`${isCurrentWeek ? 'bg-orange-50' : 'bg-gray-50'} px-6 py-4 border-b border-gray-200 flex items-center justify-between`}>
+                      <div className="flex items-center gap-3">
+                        <h3 className={`text-lg font-medium ${isCurrentWeek ? 'text-orange-900' : 'text-gray-900'}`}>
+                          Week {week.weekKey.split('-W')[1]}
+                        </h3>
+                        <span className={`text-sm ${isCurrentWeek ? 'text-orange-700' : 'text-gray-500'}`}>
+                          {week.weekRange}
+                        </span>
+                        {isCurrentWeek && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                            Current Week
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex gap-6 text-sm">
+                        <span className={isCurrentWeek ? 'text-orange-800' : 'text-gray-700'}>
+                          <span className="font-medium">Worked:</span> {weeklyWorkedStr}
+                        </span>
+                        <span className={`font-medium ${isWeekPositive ? 'text-green-700' : isWeekZero ? 'text-gray-500' : 'text-red-700'}`}>
+                          <span className="font-medium">Balance:</span> {isWeekPositive ? '+' : ''}{weeklyBalanceStr}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Week Entries Table */}
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">Date</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Status</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Hours</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Balance</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Extra</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {week.entries.map((item) => {
+                          const isTodayEntry = isToday(item.date);
+                          
+                          if (!item.entry) {
+                            // Missing entry - show placeholder
+                            return (
+                              <tr 
+                                key={item.date}
+                                id={isTodayEntry ? 'today-entry-desktop' : undefined}
+                                onClick={() => handleRowClick(item.date)}
+                                className={`cursor-pointer transition-colors ${
+                                  isTodayEntry 
+                                    ? 'bg-orange-50 ring-2 ring-inset ring-orange-300 z-10 relative' 
+                                    : 'hover:bg-gray-50 bg-gray-50/50'
+                                }`}
+                              >
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-400">
+                                  {new Date(item.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}{' '}
+                                  <span className="italic">{item.date}</span>
+                                  {isTodayEntry && <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full">Today</span>}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 italic">
+                                  Not entered
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">-</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">-</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">-</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">-</td>
+                              </tr>
+                            );
+                          }
+                          
+                          // Regular entry with data
+                          const entry = item.entry;
+                          const balanceResult = calculateDailyBalance(entry, schedules);
+                          const balanceStr = formatHours(balanceResult.balanceMinutes);
+                          const isPositive = balanceResult.balanceMinutes > 0;
+                          const isZero = balanceResult.balanceMinutes === 0;
+                          
                           return (
                             <tr 
-                              key={item.date}
+                              key={entry.date} 
                               id={isTodayEntry ? 'today-entry-desktop' : undefined}
-                              onClick={() => handleRowClick(item.date)}
+                              onClick={() => handleRowClick(entry.date)}
                               className={`cursor-pointer transition-colors ${
                                 isTodayEntry 
-                                  ? 'bg-orange-50 ring-2 ring-inset ring-orange-300 z-10 relative' 
-                                  : 'hover:bg-gray-50 bg-gray-50/50'
+                                  ? 'bg-orange-50 border-y-2 border-orange-300 z-10 relative' 
+                                  : entry.status !== 'work' 
+                                    ? 'bg-blue-50 hover:bg-blue-100' 
+                                    : 'hover:bg-gray-50'
                               }`}
                             >
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-400">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                 {new Date(item.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}{' '}
-                                <span className="italic">{item.date}</span>
+                                <span className="italic">{entry.date}</span>
                                 {isTodayEntry && <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full">Today</span>}
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 italic">
-                                Not entered
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
+                                <span 
+                                  className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                    (() => {
+                                      // Check if it's a custom type or has a custom color override
+                                      const custom = customPTO.find(p => p.id === entry.status);
+                                      if (custom || ptoColors[entry.status]) return 'text-white'; // Default to white text for custom/overrides
+                                      
+                                      // Default fixed styles
+                                      if (entry.status === 'work') return 'bg-green-100 text-green-800';
+                                      if (entry.status === 'vacation') return 'bg-blue-100 text-blue-800';
+                                      if (entry.status === 'sick') return 'bg-red-100 text-red-800';
+                                      if (entry.status === 'holiday') return 'bg-yellow-100 text-yellow-800';
+                                      if (entry.status === 'grafana-day') return 'bg-gradient-to-r from-orange-400 to-yellow-400 text-white';
+                                      return 'bg-gray-100 text-gray-800';
+                                    })()
+                                  }`}
+                                  style={(() => {
+                                    const custom = customPTO.find(p => p.id === entry.status);
+                                    if (custom) return { backgroundColor: custom.color };
+                                    if (ptoColors[entry.status]) return { backgroundColor: ptoColors[entry.status] };
+                                    return {};
+                                  })()}
+                                >
+                                  {(() => {
+                                    if (entry.status === 'grafana-day') return 'Grafana Day';
+                                    const custom = customPTO.find(p => p.id === entry.status);
+                                    return custom ? custom.name : entry.status;
+                                  })()}
+                                </span>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">-</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">-</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">-</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">-</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {entry.status === 'work' ? `${formatTimeDisplay(entry.startTime, timeFormat)} - ${formatTimeDisplay(entry.endTime, timeFormat)}` : '-'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                {entry.status === 'work' ? (
+                                  <span className={`${isPositive ? 'text-green-600' : isZero ? 'text-gray-400' : 'text-red-600'} font-medium`}>
+                                    {isPositive ? '+' : ''}{balanceStr}
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-400">-</span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {entry.extraHours ? `+${entry.extraHours}h` : '-'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 truncate max-w-xs">
+                                {entry.notes || '-'}
+                              </td>
                             </tr>
                           );
-                        }
-                        
-                        // Regular entry with data
-                        const entry = item.entry;
-                        const balanceResult = calculateDailyBalance(entry, schedules);
-                        const balanceStr = formatHours(balanceResult.balanceMinutes);
-                        const isPositive = balanceResult.balanceMinutes > 0;
-                        const isZero = balanceResult.balanceMinutes === 0;
-                        
-                        return (
-                          <tr 
-                            key={entry.date} 
-                            id={isTodayEntry ? 'today-entry-desktop' : undefined}
-                            onClick={() => handleRowClick(entry.date)}
-                            className={`cursor-pointer transition-colors ${
-                              isTodayEntry 
-                                ? 'bg-orange-50 ring-2 ring-inset ring-orange-300 z-10 relative' 
-                                : entry.status !== 'work' 
-                                  ? 'bg-blue-50 hover:bg-blue-100' 
-                                  : 'hover:bg-gray-50'
-                            }`}
-                          >
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                              {new Date(item.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}{' '}
-                              <span className="italic">{entry.date}</span>
-                              {isTodayEntry && <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full">Today</span>}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
-                              <span 
-                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                  (() => {
-                                    // Check if it's a custom type or has a custom color override
-                                    const custom = customPTO.find(p => p.id === entry.status);
-                                    if (custom || ptoColors[entry.status]) return 'text-white'; // Default to white text for custom/overrides
-                                    
-                                    // Default fixed styles
-                                    if (entry.status === 'work') return 'bg-green-100 text-green-800';
-                                    if (entry.status === 'vacation') return 'bg-blue-100 text-blue-800';
-                                    if (entry.status === 'sick') return 'bg-red-100 text-red-800';
-                                    if (entry.status === 'holiday') return 'bg-yellow-100 text-yellow-800';
-                                    if (entry.status === 'grafana-day') return 'bg-gradient-to-r from-orange-400 to-yellow-400 text-white';
-                                    return 'bg-gray-100 text-gray-800';
-                                  })()
-                                }`}
-                                style={(() => {
-                                  const custom = customPTO.find(p => p.id === entry.status);
-                                  if (custom) return { backgroundColor: custom.color };
-                                  if (ptoColors[entry.status]) return { backgroundColor: ptoColors[entry.status] };
-                                  return {};
-                                })()}
-                              >
-                                {(() => {
-                                  if (entry.status === 'grafana-day') return 'Grafana Day';
-                                  const custom = customPTO.find(p => p.id === entry.status);
-                                  return custom ? custom.name : entry.status;
-                                })()}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {entry.status === 'work' ? `${formatTimeDisplay(entry.startTime, timeFormat)} - ${formatTimeDisplay(entry.endTime, timeFormat)}` : '-'}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">
-                              {entry.status === 'work' ? (
-                                <span className={`${isPositive ? 'text-green-600' : isZero ? 'text-gray-400' : 'text-red-600'} font-medium`}>
-                                  {isPositive ? '+' : ''}{balanceStr}
-                                </span>
-                              ) : (
-                                <span className="text-gray-400">-</span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {entry.extraHours ? `+${entry.extraHours}h` : '-'}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 truncate max-w-xs">
-                              {entry.notes || '-'}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </React.Fragment>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })
+            )}
+          </div>
 
           {/* Mobile Card View */}
-          <div className="sm:hidden">
+          <div className="sm:hidden space-y-4">
             {entries.length === 0 ? (
-              <div className="px-4 py-6 text-center text-sm text-gray-500">
+              <div className="px-4 py-6 text-center text-sm text-gray-500 bg-white shadow rounded-lg">
                 No entries found for {selectedYear}
               </div>
             ) : (
@@ -463,9 +472,14 @@ export const TimesheetPage: React.FC = () => {
                 const isCurrentWeek = week.entries.some(e => isToday(e.date));
 
                 return (
-                  <div key={week.weekKey} className="border-b border-gray-200 last:border-0">
+                  <div 
+                    key={week.weekKey} 
+                    className={`bg-white shadow-lg rounded-lg overflow-hidden border-2 ${
+                      isCurrentWeek ? 'border-orange-300 ring-2 ring-orange-200' : 'border-gray-300'
+                    }`}
+                  >
                     {/* Weekly Header */}
-                    <div className={`${isCurrentWeek ? 'bg-orange-50 border-orange-200' : 'bg-slate-100 border-slate-200'} px-4 py-3 border-t first:border-t-0`}>
+                    <div className={`${isCurrentWeek ? 'bg-orange-50' : 'bg-slate-100'} px-4 py-3`}>
                       <div className="flex items-center justify-between mb-1">
                         <span className={`text-sm font-semibold ${isCurrentWeek ? 'text-orange-900' : 'text-slate-800'}`}>
                           Week {week.weekKey.split('-W')[1]} {isCurrentWeek && <span className="ml-1 text-xs bg-orange-100 text-orange-800 px-1.5 py-0.5 rounded-full">Current</span>}
@@ -495,7 +509,7 @@ export const TimesheetPage: React.FC = () => {
                               onClick={() => handleRowClick(item.date)}
                               className={`px-4 py-3 active:bg-gray-100 ${
                                 isTodayEntry 
-                                  ? 'bg-orange-50 ring-2 ring-inset ring-orange-300 z-10 relative' 
+                                  ? 'bg-orange-50 border-y-2 border-orange-300 z-10 relative' 
                                   : 'bg-gray-50/50'
                               }`}
                             >
@@ -503,7 +517,7 @@ export const TimesheetPage: React.FC = () => {
                                 <div className="flex flex-col">
                                   <span className="text-sm font-medium text-gray-400">
                                     {new Date(item.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}
-                                    {isTodayEntry && <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">Today</span>}
+                                    {isTodayEntry && <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full">Today</span>}
                                   </span>
                                   <span className="text-xs text-gray-400 italic">{item.date}</span>
                                 </div>
@@ -526,7 +540,7 @@ export const TimesheetPage: React.FC = () => {
                             onClick={() => handleRowClick(entry.date)}
                             className={`px-4 py-3 active:bg-gray-50 ${
                               isTodayEntry 
-                                ? 'bg-orange-50 ring-2 ring-inset ring-orange-300 z-10 relative' 
+                                ? 'bg-orange-50 border-y-2 border-orange-300 z-10 relative' 
                                 : entry.status !== 'work' 
                                   ? 'bg-blue-50/50' 
                                   : ''
@@ -536,48 +550,38 @@ export const TimesheetPage: React.FC = () => {
                               <div className="flex flex-col">
                                 <span className="text-sm font-medium text-gray-900">
                                   {new Date(entry.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}
-                                  {isTodayEntry && <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">Today</span>}
+                                  {isTodayEntry && <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full">Today</span>}
                                 </span>
                                 <span className="text-xs text-gray-500">{entry.date}</span>
                               </div>
-                              
-                              <span 
-                                className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
-                                  (() => {
-                                    const custom = customPTO.find(p => p.id === entry.status);
-                                    if (custom || ptoColors[entry.status]) return 'text-white';
-                                    
-                                    if (entry.status === 'work') return 'bg-green-100 text-green-800';
-                                    if (entry.status === 'vacation') return 'bg-blue-100 text-blue-800';
-                                    if (entry.status === 'sick') return 'bg-red-100 text-red-800';
-                                    if (entry.status === 'holiday') return 'bg-yellow-100 text-yellow-800';
-                                    if (entry.status === 'grafana-day') return 'bg-gradient-to-r from-orange-400 to-yellow-400 text-white';
-                                    return 'bg-gray-100 text-gray-800';
-                                  })()
-                                }`}
-                                style={(() => {
-                                  const custom = customPTO.find(p => p.id === entry.status);
-                                  if (custom) return { backgroundColor: custom.color };
-                                  if (ptoColors[entry.status]) return { backgroundColor: ptoColors[entry.status] };
-                                  return {};
-                                })()}
-                              >
-                                {(() => {
-                                  if (entry.status === 'grafana-day') return 'Grafana Day';
-                                  const custom = customPTO.find(p => p.id === entry.status);
-                                  return custom ? custom.name : entry.status;
-                                })()}
-                              </span>
-                            </div>
-
-                            <div className="flex items-center justify-between text-sm">
-                              <div className="text-gray-500">
-                                {entry.status === 'work' ? `${formatTimeDisplay(entry.startTime, timeFormat)} - ${formatTimeDisplay(entry.endTime, timeFormat)}` : '-'}
-                              </div>
-                              {entry.status === 'work' && (
-                                <div className={`${isPositive ? 'text-green-600' : isZero ? 'text-gray-400' : 'text-red-600'} font-medium`}>
+                              <div className="text-right">
+                                <div className={`text-sm font-medium ${
+                                  isPositive ? 'text-green-700' : isZero ? 'text-gray-500' : 'text-red-700'
+                                }`}>
                                   {isPositive ? '+' : ''}{balanceStr}
                                 </div>
+                                <div className="text-xs text-gray-500">
+                                  {entry.status === 'work' ? 'Work' : 
+                                   entry.status === 'vacation' ? 'Vacation' :
+                                   entry.status === 'holiday' ? 'Holiday' :
+                                   entry.status === 'sick' ? 'Sick' :
+                                   entry.status === 'grafana-day' ? 'Grafana Day' : entry.status}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">
+                              {entry.status === 'work' && (
+                                <>
+                                  <span>
+                                    {formatTimeDisplay(entry.startTime, timeFormat)} - {formatTimeDisplay(entry.endTime, timeFormat)}
+                                  </span>
+                                  {entry.lunchMinutes > 0 && (
+                                    <span>
+                                      Lunch: {formatHours(entry.lunchMinutes)}
+                                    </span>
+                                  )}
+                                </>
                               )}
                             </div>
 
@@ -604,7 +608,7 @@ export const TimesheetPage: React.FC = () => {
               })
             )}
           </div>
-        </div>
+        </>
       )}
     </div>
   );
