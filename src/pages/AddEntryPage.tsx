@@ -1,28 +1,39 @@
-import React, { useState, useEffect } from 'react';
-import { DailyEntryForm } from '../components/DailyEntryForm';
-import { getEntries, saveEntry, deleteEntry } from '../services/firestore/FirestoreService';
-import type { FirestoreDailyEntry } from '../types/firestore';
-import { getCurrentUser } from '../services/auth/AuthService';
-import { calculateDailyBalance } from '../services/balance/BalanceService';
-import { getExpectedDailyHours } from '../services/schedule/ScheduleService';
-import { formatHours } from '../services/time/TimeService';
+import React, { useState, useEffect } from "react";
+import { DailyEntryForm } from "../components/DailyEntryForm";
+import {
+  getEntries,
+  saveEntry,
+  deleteEntry,
+} from "../services/firestore/FirestoreService";
+import type { FirestoreDailyEntry } from "../types/firestore";
+import { getCurrentUser } from "../services/auth/AuthService";
+import { calculateDailyBalance } from "../services/balance/BalanceService";
+import { getExpectedDailyHours } from "../services/schedule/ScheduleService";
+import { formatHours } from "../services/time/TimeService";
 
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 export const AddEntryPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const dateParam = searchParams.get('date');
-  
-  const [selectedDate, setSelectedDate] = useState(dateParam || new Date().toISOString().split('T')[0]);
+  const dateParam = searchParams.get("date");
+
+  const [selectedDate, setSelectedDate] = useState(
+    dateParam || new Date().toISOString().split("T")[0]
+  );
   const [entry, setEntry] = useState<FirestoreDailyEntry | null>(null);
   const [loading, setLoading] = useState(false);
-  const [balance, setBalance] = useState<{ actual: string; expected: string; diff: string } | null>(null);
+  const [balance, setBalance] = useState<{
+    actual: string;
+    expected: string;
+    diff: string;
+    diffMinutes: number;
+  } | null>(null);
 
   const user = getCurrentUser();
 
   const handleBack = () => {
-    navigate('/timesheet');
+    navigate("/timesheet");
   };
 
   useEffect(() => {
@@ -43,80 +54,90 @@ export const AddEntryPage: React.FC = () => {
       const entries = await getEntries(user.uid, selectedDate, selectedDate);
       const currentEntry = entries[0] || null;
       setEntry(currentEntry);
-      
+
       // Calculate balance preview
-      // Note: We need the user's schedule settings here. 
+      // Note: We need the user's schedule settings here.
       // For now, we'll hardcode a default schedule or fetch it.
       // TODO: Fetch real settings.
-      const defaultSchedule = [{
-        effectiveDate: '2000-01-01',
-        weeklyHours: 40,
-        workDays: [1, 2, 3, 4, 5]
-      }];
+      const defaultSchedule = [
+        {
+          effectiveDate: "2000-01-01",
+          weeklyHours: 40,
+          workDays: [1, 2, 3, 4, 5],
+        },
+      ];
 
       if (currentEntry) {
         const result = calculateDailyBalance(currentEntry, defaultSchedule);
         setBalance({
           actual: formatHours(result.actualMinutes),
           expected: formatHours(result.expectedMinutes),
-          diff: formatHours(result.balanceMinutes)
+          diff: formatHours(result.balanceMinutes),
+          diffMinutes: result.balanceMinutes,
         });
       } else {
         // Preview for empty day
         const expected = getExpectedDailyHours(selectedDate, defaultSchedule);
+        const diffMinutes = 0 - expected * 60;
         setBalance({
-          actual: '0.00',
+          actual: "0.00",
           expected: expected.toFixed(2),
-          diff: formatHours(0 - expected * 60)
+          diff: formatHours(diffMinutes),
+          diffMinutes: diffMinutes,
         });
       }
-
     } catch (error) {
-      console.error('Error fetching entry:', error);
+      console.error("Error fetching entry:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleFormChange = React.useCallback((updatedFields: Partial<FirestoreDailyEntry>) => {
-    // Create a temporary entry object for calculation
-    const tempEntry: any = {
-      ...updatedFields,
-      uid: user?.uid || '',
-      updatedAt: new Date().toISOString()
-    };
+  const handleFormChange = React.useCallback(
+    (updatedFields: Partial<FirestoreDailyEntry>) => {
+      // Create a temporary entry object for calculation
+      const tempEntry: any = {
+        ...updatedFields,
+        uid: user?.uid || "",
+        updatedAt: new Date().toISOString(),
+      };
 
-    // Calculate balance preview
-    const defaultSchedule = [{
-      effectiveDate: '2000-01-01',
-      weeklyHours: 40,
-      workDays: [1, 2, 3, 4, 5]
-    }];
+      // Calculate balance preview
+      const defaultSchedule = [
+        {
+          effectiveDate: "2000-01-01",
+          weeklyHours: 40,
+          workDays: [1, 2, 3, 4, 5],
+        },
+      ];
 
-    const result = calculateDailyBalance(tempEntry, defaultSchedule);
-    setBalance({
-      actual: formatHours(result.actualMinutes),
-      expected: formatHours(result.expectedMinutes),
-      diff: formatHours(result.balanceMinutes)
-    });
-  }, [user]);
+      const result = calculateDailyBalance(tempEntry, defaultSchedule);
+      setBalance({
+        actual: formatHours(result.actualMinutes),
+        expected: formatHours(result.expectedMinutes),
+        diff: formatHours(result.balanceMinutes),
+        diffMinutes: result.balanceMinutes,
+      });
+    },
+    [user]
+  );
 
   const handleSave = async (newEntry: FirestoreDailyEntry) => {
     if (!user) return;
     await saveEntry(user.uid, newEntry);
     // Delay navigation to allow confetti animation to show
     setTimeout(() => {
-      navigate('/timesheet');
+      navigate("/timesheet");
     }, 800);
   };
 
   const handleDelete = async () => {
     if (!user || !entry) return;
-    
+
     await deleteEntry(user.uid, selectedDate);
     // Delay navigation to allow delete effect to show
     setTimeout(() => {
-      navigate('/timesheet');
+      navigate("/timesheet");
     }, 600);
   };
 
@@ -153,26 +174,43 @@ export const AddEntryPage: React.FC = () => {
 
         <div className="lg:col-span-1">
           <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Daily Summary</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Daily Summary
+            </h3>
             {balance ? (
               <dl className="space-y-4">
                 <div className="flex justify-between">
                   <dt className="text-sm text-gray-500">Expected</dt>
-                  <dd className="text-sm font-medium text-gray-900">{balance.expected} h</dd>
+                  <dd className="text-sm font-medium text-gray-900">
+                    {balance.expected} h
+                  </dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-sm text-gray-500">Actual</dt>
-                  <dd className="text-sm font-medium text-gray-900">{balance.actual} h</dd>
+                  <dd className="text-sm font-medium text-gray-900">
+                    {balance.actual} h
+                  </dd>
                 </div>
                 <div className="pt-4 border-t border-gray-200 flex justify-between">
-                  <dt className="text-base font-medium text-gray-900">Balance</dt>
-                  <dd className={`text-base font-medium ${Number(balance.diff) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {Number(balance.diff) > 0 ? '+' : ''}{balance.diff} h
+                  <dt className="text-base font-medium text-gray-900">
+                    Balance
+                  </dt>
+                  <dd
+                    className={`text-base font-medium ${
+                      balance.diffMinutes >= 0
+                        ? "text-green-600"
+                        : "text-red-600"
+                    }`}
+                  >
+                    {balance.diffMinutes > 0 ? "+" : ""}
+                    {balance.diff} h
                   </dd>
                 </div>
               </dl>
             ) : (
-              <p className="text-gray-500 text-sm">Select a date to view summary</p>
+              <p className="text-gray-500 text-sm">
+                Select a date to view summary
+              </p>
             )}
           </div>
         </div>
