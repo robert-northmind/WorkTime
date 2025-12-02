@@ -192,9 +192,9 @@ export const StatsPage: React.FC = () => {
       {loading ? (
         <div>Loading stats...</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Vacation Stats */}
-          <div className="bg-white shadow rounded-lg p-6 md:col-span-3 lg:col-span-1">
+          <div className="bg-white shadow rounded-lg p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Vacation (Days)</h3>
             {vacationStats && (
               <dl className="grid grid-cols-2 gap-4">
