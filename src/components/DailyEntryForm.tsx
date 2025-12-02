@@ -13,11 +13,10 @@ interface DailyEntryFormProps {
   onSave: (entry: FirestoreDailyEntry) => Promise<void>;
   onDelete?: () => void;
   onChange?: (entry: Partial<FirestoreDailyEntry>) => void;
-  onBack?: () => void;
   uid: string;
 }
 
-export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialData, onSave, onDelete, onChange, onBack, uid }) => {
+export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialData, onSave, onDelete, onChange, uid }) => {
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [lunchTime, setLunchTime] = useState('00:00');

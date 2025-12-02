@@ -217,7 +217,6 @@ export const AddEntryPage: React.FC = () => {
               onSave={handleSave}
               onDelete={handleDelete}
               onChange={handleFormChange}
-              onBack={handleBack}
               uid={user.uid}
             />
           )}
