@@ -395,12 +395,12 @@ export const TimesheetPage: React.FC = () => {
                     <div
                       className={`relative px-6 py-4 border-b flex items-center justify-between ${
                         isCurrentWeek
-                          ? "bg-amber-50/80 border-amber-200"
+                          ? "bg-amber-50/80 border-amber-300"
                           : balanceTheme === "emerald"
-                          ? "bg-emerald-50/50 border-emerald-100"
+                          ? "bg-emerald-50/50 border-emerald-300"
                           : balanceTheme === "rose"
-                          ? "bg-rose-50/50 border-rose-100"
-                          : "bg-slate-50/50 border-slate-200"
+                          ? "bg-rose-50/50 border-rose-300"
+                          : "bg-slate-50/50 border-slate-300"
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -550,7 +550,7 @@ export const TimesheetPage: React.FC = () => {
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100">
+                      <tbody className="divide-y divide-gray-300">
                         {week.entries.map((item) => {
                           const isTodayEntry = isToday(item.date);
 
@@ -567,7 +567,7 @@ export const TimesheetPage: React.FC = () => {
                                 onClick={() => handleRowClick(item.date)}
                                 className={`cursor-pointer transition-all duration-200 ${
                                   isTodayEntry
-                                    ? "bg-amber-50 ring-2 ring-inset ring-amber-300 z-10 relative"
+                                    ? "bg-amber-50 shadow-[inset_0_2px_0_#fcd34d,inset_0_-2px_0_#fcd34d] z-10 relative"
                                     : "hover:bg-gray-50/80 bg-gray-50/30"
                                 }`}
                               >
@@ -627,7 +627,7 @@ export const TimesheetPage: React.FC = () => {
                               onClick={() => handleRowClick(entry.date)}
                               className={`cursor-pointer transition-all duration-200 ${
                                 isTodayEntry
-                                  ? "bg-amber-50 ring-2 ring-inset ring-amber-300 z-10 relative"
+                                  ? "bg-amber-50 shadow-[inset_0_2px_0_#fcd34d,inset_0_-2px_0_#fcd34d] z-10 relative"
                                   : entry.status !== "work"
                                   ? "bg-sky-50/50 hover:bg-sky-50"
                                   : "hover:bg-gray-50/80"
@@ -824,12 +824,12 @@ export const TimesheetPage: React.FC = () => {
                     <div
                       className={`relative px-4 py-3 border-b ${
                         isCurrentWeek
-                          ? "bg-amber-50/80 border-amber-200"
+                          ? "bg-amber-50/80 border-amber-300"
                           : mobileBalanceTheme === "emerald"
-                          ? "bg-emerald-50/50 border-emerald-100"
+                          ? "bg-emerald-50/50 border-emerald-300"
                           : mobileBalanceTheme === "rose"
-                          ? "bg-rose-50/50 border-rose-100"
-                          : "bg-slate-50/50 border-slate-200"
+                          ? "bg-rose-50/50 border-rose-300"
+                          : "bg-slate-50/50 border-slate-300"
                       }`}
                     >
                       <div className="flex items-center justify-between mb-2">
@@ -907,7 +907,7 @@ export const TimesheetPage: React.FC = () => {
                     </div>
 
                     {/* Daily Cards */}
-                    <div className="relative divide-y divide-gray-100/80">
+                    <div className="relative divide-y divide-gray-300">
                       {week.entries.map((item) => {
                         const isTodayEntry = isToday(item.date);
 
@@ -919,9 +919,9 @@ export const TimesheetPage: React.FC = () => {
                                 isTodayEntry ? "today-entry-mobile" : undefined
                               }
                               onClick={() => handleRowClick(item.date)}
-                              className={`px-4 py-3 active:bg-gray-100 transition-colors ${
+                              className={`w-full px-4 py-3 active:bg-gray-100 transition-colors ${
                                 isTodayEntry
-                                  ? "bg-amber-50 ring-2 ring-inset ring-amber-300 z-10 relative"
+                                  ? "bg-amber-50 shadow-[inset_0_2px_0_#fcd34d,inset_0_-2px_0_#fcd34d] z-10 relative"
                                   : "bg-gray-50/30"
                               }`}
                             >
@@ -967,9 +967,9 @@ export const TimesheetPage: React.FC = () => {
                             key={entry.date}
                             id={isTodayEntry ? "today-entry-mobile" : undefined}
                             onClick={() => handleRowClick(entry.date)}
-                            className={`px-4 py-3 active:bg-gray-50 transition-colors ${
+                            className={`w-full px-4 py-3 active:bg-gray-50 transition-colors ${
                               isTodayEntry
-                                ? "bg-amber-50 ring-2 ring-inset ring-amber-300 z-10 relative"
+                                ? "bg-amber-50 shadow-[inset_0_2px_0_#fcd34d,inset_0_-2px_0_#fcd34d] z-10 relative"
                                 : entry.status !== "work"
                                 ? "bg-sky-50/30"
                                 : ""
