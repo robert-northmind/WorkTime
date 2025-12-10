@@ -5,24 +5,14 @@ import { getEntries, getUser } from "../services/firestore/FirestoreService";
 import { calculateDailyBalance } from "../services/balance/BalanceService";
 import { formatHours } from "../services/time/TimeService";
 import { formatTimeDisplay } from "../services/time/TimeFormatService";
+import {
+  getWeekNumber,
+  findScrollTargets,
+  type WeekGroup,
+} from "../services/scroll/ScrollService";
 import type { FirestoreDailyEntry, CustomPTOType } from "../types/firestore";
 
 const SCROLL_POSITION_KEY = "timesheet-scroll-position";
-
-// Helper to get ISO week number
-const getWeekNumber = (dateStr: string): { year: number; week: number } => {
-  const date = new Date(dateStr + "T00:00:00");
-  const d = new Date(
-    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
-  );
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const weekNo = Math.ceil(
-    ((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7
-  );
-  return { year: d.getUTCFullYear(), week: weekNo };
-};
 
 // Helper to get week date range
 const getWeekRange = (dateStr: string): string => {
@@ -234,22 +224,52 @@ export const TimesheetPage: React.FC = () => {
   };
 
   const scrollToToday = () => {
-    const desktopEntry = document.getElementById("today-entry-desktop");
-    const mobileEntry = document.getElementById("today-entry-mobile");
+    const todayStr = new Date().toISOString().split("T")[0];
 
-    if (desktopEntry && desktopEntry.offsetParent !== null) {
-      desktopEntry.scrollIntoView({ behavior: "smooth", block: "center" });
-    } else if (mobileEntry && mobileEntry.offsetParent !== null) {
-      mobileEntry.scrollIntoView({ behavior: "smooth", block: "center" });
-    } else {
-      // If today isn't loaded/visible, maybe switch year or just alert
-      // For now, let's just try to find the closest week if today isn't there?
-      // Or simply do nothing if not found in current view.
-      // We could also check if the selected year is current year.
-      if (selectedYear !== new Date().getFullYear()) {
-        setSelectedYear(new Date().getFullYear());
-        // We need to wait for render, but for simplicity let's just switch year first.
-        // The user might need to click again.
+    // Use the pure function to determine scroll targets
+    const result = findScrollTargets(
+      groupedByWeek as WeekGroup[],
+      selectedYear,
+      todayStr
+    );
+
+    // Handle year change action
+    if (result.action === "changeYear") {
+      setSelectedYear(result.targetYear);
+      // User will need to click again after year switches
+      return;
+    }
+
+    // Try each scroll target in order
+    for (const target of result.targets) {
+      if (target.type === "todayEntry") {
+        const desktopEntry = document.getElementById("today-entry-desktop");
+        const mobileEntry = document.getElementById("today-entry-mobile");
+
+        if (desktopEntry && desktopEntry.offsetParent !== null) {
+          desktopEntry.scrollIntoView({ behavior: "smooth", block: "center" });
+          return;
+        }
+        if (mobileEntry && mobileEntry.offsetParent !== null) {
+          mobileEntry.scrollIntoView({ behavior: "smooth", block: "center" });
+          return;
+        }
+      } else if (target.type === "weekHeader") {
+        const desktopHeader = document.getElementById(
+          `week-header-desktop-${target.weekKey}`
+        );
+        const mobileHeader = document.getElementById(
+          `week-header-mobile-${target.weekKey}`
+        );
+
+        if (desktopHeader && desktopHeader.offsetParent !== null) {
+          desktopHeader.scrollIntoView({ behavior: "smooth", block: "start" });
+          return;
+        }
+        if (mobileHeader && mobileHeader.offsetParent !== null) {
+          mobileHeader.scrollIntoView({ behavior: "smooth", block: "start" });
+          return;
+        }
       }
     }
   };
@@ -331,8 +351,12 @@ export const TimesheetPage: React.FC = () => {
                     d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                   />
                 </svg>
-                <p className="text-lg font-medium text-gray-600">No entries found for {selectedYear}</p>
-                <p className="text-sm text-gray-400 mt-1">Start by adding your first time entry</p>
+                <p className="text-lg font-medium text-gray-600">
+                  No entries found for {selectedYear}
+                </p>
+                <p className="text-sm text-gray-400 mt-1">
+                  Start by adding your first time entry
+                </p>
               </div>
             ) : (
               groupedByWeek.map((week) => {
@@ -369,9 +393,7 @@ export const TimesheetPage: React.FC = () => {
                   <div
                     key={week.weekKey}
                     className={`relative overflow-hidden shadow-lg sm:rounded-xl transition-all duration-300 hover:shadow-xl ${
-                      isCurrentWeek
-                        ? "ring-2 ring-amber-400 ring-offset-2"
-                        : ""
+                      isCurrentWeek ? "ring-2 ring-amber-400 ring-offset-2" : ""
                     } ${
                       balanceTheme === "emerald"
                         ? "bg-gradient-to-br from-emerald-50/80 via-white to-white border-t-4 border-emerald-500"
@@ -393,6 +415,7 @@ export const TimesheetPage: React.FC = () => {
 
                     {/* Week Header */}
                     <div
+                      id={`week-header-desktop-${week.weekKey}`}
                       className={`relative px-6 py-4 border-b flex items-center justify-between ${
                         isCurrentWeek
                           ? "bg-amber-50/80 border-amber-300"
@@ -440,9 +463,7 @@ export const TimesheetPage: React.FC = () => {
                         <div>
                           <h3
                             className={`text-lg font-bold ${
-                              isCurrentWeek
-                                ? "text-amber-900"
-                                : "text-gray-900"
+                              isCurrentWeek ? "text-amber-900" : "text-gray-900"
                             }`}
                           >
                             Week {week.weekKey.split("-W")[1]}
@@ -764,8 +785,12 @@ export const TimesheetPage: React.FC = () => {
                     d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                   />
                 </svg>
-                <p className="text-base font-medium text-gray-600">No entries found for {selectedYear}</p>
-                <p className="text-xs text-gray-400 mt-1">Start by adding your first time entry</p>
+                <p className="text-base font-medium text-gray-600">
+                  No entries found for {selectedYear}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Start by adding your first time entry
+                </p>
               </div>
             ) : (
               groupedByWeek.map((week) => {
@@ -822,6 +847,7 @@ export const TimesheetPage: React.FC = () => {
 
                     {/* Weekly Header */}
                     <div
+                      id={`week-header-mobile-${week.weekKey}`}
                       className={`relative px-4 py-3 border-b ${
                         isCurrentWeek
                           ? "bg-amber-50/80 border-amber-300"
