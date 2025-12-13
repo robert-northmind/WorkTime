@@ -10,6 +10,7 @@ import { getCurrentUser } from "../services/auth/AuthService";
 import { calculateDailyBalance } from "../services/balance/BalanceService";
 import { getExpectedDailyHours } from "../services/schedule/ScheduleService";
 import { formatHours } from "../services/time/TimeService";
+import { trackUserAction } from "../services/faro/FaroService";
 
 import { useSearchParams, useNavigate } from "react-router-dom";
 
@@ -124,6 +125,15 @@ export const AddEntryPage: React.FC = () => {
 
   const handleSave = async (newEntry: FirestoreDailyEntry) => {
     if (!user) return;
+
+    // Track user action with Faro
+    trackUserAction('entry-saved', {
+      date: newEntry.date,
+      hasStartTime: newEntry.startTime ? 'true' : 'false',
+      hasEndTime: newEntry.endTime ? 'true' : 'false',
+      hasLunch: newEntry.lunchMinutes ? 'true' : 'false',
+    });
+
     await saveEntry(user.uid, newEntry);
     // Delay navigation to allow confetti animation to show
     setTimeout(() => {
@@ -133,6 +143,11 @@ export const AddEntryPage: React.FC = () => {
 
   const handleDelete = async () => {
     if (!user || !entry) return;
+
+    // Track user action with Faro
+    trackUserAction('entry-deleted', {
+      date: selectedDate,
+    });
 
     await deleteEntry(user.uid, selectedDate);
     // Delay navigation to allow delete effect to show
