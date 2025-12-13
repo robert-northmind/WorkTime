@@ -4,6 +4,7 @@ import {
   type Faro,
 } from "@grafana/faro-web-sdk";
 import { TracingInstrumentation } from "@grafana/faro-web-tracing";
+import type { Span, Tracer } from "@opentelemetry/api";
 
 let faro: Faro | null = null;
 
@@ -77,4 +78,65 @@ export function trackUserAction(
   }
 
   faro.api.startUserAction(name, attributes);
+}
+
+/**
+ * Get a tracer for creating custom spans
+ * @param name Tracer name (e.g., 'firestore', 'auth')
+ * @returns Tracer instance or null if Faro is not initialized
+ */
+export function getTracer(name: string): Tracer | null {
+  if (!faro) {
+    return null;
+  }
+
+  const otel = faro.api.getOTEL();
+  if (!otel) {
+    return null;
+  }
+
+  return otel.trace.getTracer(name);
+}
+
+/**
+ * Wrap an async operation with a traced span
+ * @param tracerName Name of the tracer (e.g., 'firestore')
+ * @param spanName Name of the span (e.g., 'saveEntry')
+ * @param attributes Optional attributes to attach to the span
+ * @param operation The async operation to trace
+ * @returns The result of the operation
+ */
+export async function withTrace<T>(
+  tracerName: string,
+  spanName: string,
+  attributes: Record<string, string>,
+  operation: () => Promise<T>
+): Promise<T> {
+  const tracer = getTracer(tracerName);
+
+  if (!tracer) {
+    // Faro not initialized, just run the operation
+    return operation();
+  }
+
+  const span: Span = tracer.startSpan(spanName);
+
+  // Add attributes to span
+  Object.entries(attributes).forEach(([key, value]) => {
+    span.setAttribute(key, value);
+  });
+
+  try {
+    const result = await operation();
+    span.setStatus({ code: 0 }); // SpanStatusCode.OK
+    return result;
+  } catch (error) {
+    span.setStatus({
+      code: 2, // SpanStatusCode.ERROR
+      message: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
+  } finally {
+    span.end();
+  }
 }
