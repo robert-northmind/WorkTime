@@ -10,6 +10,7 @@ import {
   findScrollTargets,
   type WeekGroup,
 } from "../services/scroll/ScrollService";
+import { fillWeekDays } from "../services/week/WeekService";
 import type { FirestoreDailyEntry, CustomPTOType } from "../types/firestore";
 
 const SCROLL_POSITION_KEY = "timesheet-scroll-position";
@@ -153,63 +154,6 @@ export const TimesheetPage: React.FC = () => {
       weekRange: currentWeekRange,
       entries: fillWeekDays(currentWeekEntries, currentWeekKey),
     });
-  }
-
-  // Helper to fill in all weekdays (Mon-Fri) of a week
-  function fillWeekDays(
-    weekEntries: FirestoreDailyEntry[],
-    weekKey: string
-  ): { date: string; entry: FirestoreDailyEntry | null }[] {
-    if (weekEntries.length === 0) return [];
-
-    // Parse week key to get year and week number (e.g., "2025-W47")
-    const [yearStr, weekStr] = weekKey.split("-W");
-    const year = parseInt(yearStr);
-    const weekNum = parseInt(weekStr);
-
-    // Calculate Monday of this ISO week
-    // Simple algorithm: Jan 4 is always in week 1
-    const jan4 = new Date(Date.UTC(year, 0, 4));
-    const jan4DayOfWeek = jan4.getUTCDay() || 7; // Convert Sunday (0) to 7
-
-    // Find Monday of week 1
-    const week1Monday = new Date(jan4);
-    week1Monday.setUTCDate(jan4.getUTCDate() - jan4DayOfWeek + 1);
-
-    // Calculate Monday of the target week
-    const monday = new Date(week1Monday);
-    monday.setUTCDate(week1Monday.getUTCDate() + (weekNum - 1) * 7);
-
-    // Create map of existing entries
-    const entryMap = new Map<string, FirestoreDailyEntry>();
-    weekEntries.forEach((entry) => entryMap.set(entry.date, entry));
-
-    // Fill weekdays only (Mon-Fri = 5 days)
-    const allDays: { date: string; entry: FirestoreDailyEntry | null }[] = [];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // Build days in ascending order first (Mon to Fri)
-    for (let i = 0; i < 5; i++) {
-      // Only 5 weekdays
-      // Create a new date in UTC for this day
-      const currentDay = new Date(
-        Date.UTC(
-          monday.getUTCFullYear(),
-          monday.getUTCMonth(),
-          monday.getUTCDate() + i
-        )
-      );
-      const dateStr = currentDay.toISOString().split("T")[0];
-
-      // Only include days that are on or before today, or have an entry
-      if (currentDay <= today || entryMap.has(dateStr)) {
-        allDays.push({ date: dateStr, entry: entryMap.get(dateStr) || null });
-      }
-    }
-
-    // Reverse to show most recent first (descending order)
-    return allDays.reverse();
   }
 
   // Helper to check if a date string is today
