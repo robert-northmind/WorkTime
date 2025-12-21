@@ -1001,8 +1001,8 @@ export const TimesheetPage: React.FC = () => {
                                 : ""
                             }`}
                           >
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex flex-col">
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <div className="flex flex-col min-w-0">
                                 <span className="text-sm font-medium text-gray-900">
                                   {new Date(
                                     entry.date + "T00:00:00"
@@ -1019,7 +1019,7 @@ export const TimesheetPage: React.FC = () => {
                                   {entry.date}
                                 </span>
                               </div>
-                              <div className="text-right">
+                              <div className="flex flex-col items-end gap-1 flex-shrink-0">
                                 <div
                                   className={`text-sm font-bold ${
                                     isPositive
@@ -1032,19 +1032,57 @@ export const TimesheetPage: React.FC = () => {
                                   {isPositive ? "+" : ""}
                                   {balanceStr}
                                 </div>
-                                <div className="text-xs text-gray-500">
-                                  {entry.status === "work"
-                                    ? "Work"
-                                    : entry.status === "vacation"
-                                    ? "Vacation"
-                                    : entry.status === "holiday"
-                                    ? "Holiday"
-                                    : entry.status === "sick"
-                                    ? "Sick"
-                                    : entry.status === "grafana-day"
-                                    ? "Grafana Day"
-                                    : entry.status}
-                                </div>
+                                <span
+                                  className={`px-2 py-0.5 text-xs font-semibold rounded-full whitespace-nowrap ${(() => {
+                                    // Check if it's a custom type or has a custom color override
+                                    const custom = customPTO.find(
+                                      (p) => p.id === entry.status
+                                    );
+                                    if (custom || ptoColors[entry.status])
+                                      return "text-white";
+
+                                    // Default fixed styles
+                                    if (entry.status === "work")
+                                      return "bg-green-100 text-green-800";
+                                    if (entry.status === "vacation")
+                                      return "bg-blue-100 text-blue-800";
+                                    if (entry.status === "sick")
+                                      return "bg-red-100 text-red-800";
+                                    if (entry.status === "holiday")
+                                      return "bg-yellow-100 text-yellow-800";
+                                    if (entry.status === "grafana-day")
+                                      return "bg-gradient-to-r from-orange-400 to-yellow-400 text-white";
+                                    return "bg-gray-100 text-gray-800";
+                                  })()}`}
+                                  style={(() => {
+                                    const custom = customPTO.find(
+                                      (p) => p.id === entry.status
+                                    );
+                                    if (custom)
+                                      return { backgroundColor: custom.color };
+                                    if (ptoColors[entry.status])
+                                      return {
+                                        backgroundColor:
+                                          ptoColors[entry.status],
+                                      };
+                                    return {};
+                                  })()}
+                                >
+                                  {(() => {
+                                    if (entry.status === "work") return "Work";
+                                    if (entry.status === "vacation")
+                                      return "Vacation";
+                                    if (entry.status === "holiday")
+                                      return "Holiday";
+                                    if (entry.status === "sick") return "Sick";
+                                    if (entry.status === "grafana-day")
+                                      return "Grafana Day";
+                                    const custom = customPTO.find(
+                                      (p) => p.id === entry.status
+                                    );
+                                    return custom ? custom.name : entry.status;
+                                  })()}
+                                </span>
                               </div>
                             </div>
 
