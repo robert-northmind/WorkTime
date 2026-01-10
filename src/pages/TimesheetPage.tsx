@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser } from "../services/auth/AuthService";
 import { getEntries, getUser } from "../services/firestore/FirestoreService";
@@ -47,9 +47,36 @@ export const TimesheetPage: React.FC = () => {
   const [ptoColors, setPtoColors] = useState<Record<string, string>>({});
   const [timeFormat, setTimeFormat] = useState<"12h" | "24h">("24h");
   const [loading, setLoading] = useState(false);
+  const [showFloatingBar, setShowFloatingBar] = useState(false);
   const hasRestoredScroll = useRef(false);
+  const toolbarRef = useRef<HTMLDivElement>(null);
 
   const user = getCurrentUser();
+
+  // Intersection Observer to detect when toolbar scrolls out of view
+  useEffect(() => {
+    const toolbar = toolbarRef.current;
+    if (!toolbar) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // Show floating bar when toolbar is NOT intersecting (scrolled out of view)
+        setShowFloatingBar(!entry.isIntersecting);
+      },
+      {
+        root: null,
+        rootMargin: "0px",
+        threshold: 0,
+      }
+    );
+
+    observer.observe(toolbar);
+    return () => observer.disconnect();
+  }, []);
+
+  const scrollToTop = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
 
   // Restore scroll position after data loads
   useEffect(() => {
@@ -222,7 +249,10 @@ export const TimesheetPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div
+        ref={toolbarRef}
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+      >
         <h2 className="text-2xl font-bold text-gray-900">Timesheet</h2>
         <div className="flex items-center gap-3 self-end sm:self-auto">
           <label htmlFor="year" className="text-sm font-medium text-gray-700">
@@ -1078,6 +1108,94 @@ export const TimesheetPage: React.FC = () => {
           </div>
         </>
       )}
+
+      {/* Floating Action Bar - appears when toolbar scrolls out of view */}
+      <div
+        className={`fixed bottom-0 left-0 right-0 z-50 transition-all duration-300 ease-out ${
+          showFloatingBar
+            ? "translate-y-0 opacity-100"
+            : "translate-y-full opacity-0 pointer-events-none"
+        }`}
+      >
+        {/* Safe area padding for devices with home indicators (iPhone X+) */}
+        <div className="flex justify-center sm:justify-end px-3 sm:px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div className="flex sm:inline-flex items-center justify-center gap-1.5 sm:gap-3 bg-white/95 backdrop-blur-md shadow-lg rounded-2xl sm:rounded-full px-4 sm:px-4 py-3 sm:py-3 border border-gray-200 w-full sm:w-auto">
+            {/* Year Picker - larger touch target on mobile */}
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="rounded-full border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-2 sm:px-3 py-2 text-sm bg-white min-h-[44px]"
+            >
+              {years.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+
+            {/* Today Button - larger touch target */}
+            <button
+              onClick={scrollToToday}
+              className="inline-flex items-center px-3 sm:px-4 py-2 min-h-[44px] border border-gray-300 shadow-sm text-sm font-medium rounded-full text-gray-700 bg-white hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              Today
+            </button>
+
+            {/* Add Entry Button - larger touch target */}
+            <button
+              onClick={() => {
+                sessionStorage.setItem(
+                  SCROLL_POSITION_KEY,
+                  window.scrollY.toString()
+                );
+                navigate(
+                  `/entry?date=${new Date().toISOString().split("T")[0]}`
+                );
+              }}
+              className="inline-flex items-center justify-center px-3 sm:px-4 py-2 min-h-[44px] min-w-[44px] border border-transparent shadow-sm text-sm font-medium rounded-full text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <svg
+                className="h-5 w-5 sm:h-4 sm:w-4 sm:mr-1.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              <span className="hidden sm:inline">Add</span>
+            </button>
+
+            {/* Divider */}
+            <div className="w-px h-6 bg-gray-300 mx-0.5 sm:mx-1" />
+
+            {/* Scroll to Top Button - proper touch target */}
+            <button
+              onClick={scrollToTop}
+              className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] border border-gray-300 shadow-sm text-sm font-medium rounded-full text-gray-700 bg-white hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              title="Scroll to top"
+            >
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 10l7-7m0 0l7 7m-7-7v18"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
