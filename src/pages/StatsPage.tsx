@@ -21,6 +21,21 @@ export const StatsPage: React.FC = () => {
   const [yearlyBalanceMinutes, setYearlyBalanceMinutes] = useState<number>(0);
   const [averageWeeklyHours, setAverageWeeklyHours] = useState<string>("0.00");
   const [expectedWeeklyHours, setExpectedWeeklyHours] = useState<number>(40);
+  const [dayOfWeekStats, setDayOfWeekStats] = useState<
+    {
+      day: number;
+      name: string;
+      avgMinutes: number;
+      avgHoursStr: string;
+      percentage: number;
+    }[]
+  >([]);
+  const [intensityStats, setIntensityStats] = useState<{
+    longestDay: string;
+    longestDayAvg: string;
+    mostConsistentDay: string;
+    needsMoreData: boolean;
+  } | null>(null);
 
   const user = getCurrentUser();
 
@@ -195,6 +210,76 @@ export const StatsPage: React.FC = () => {
       } else {
         setAverageWeeklyHours(formatHours(currentExpectedWeeklyHours * 60));
       }
+
+      // --- 5. Day of Week Stats ---
+      const dayMap = new Map<number, number[]>();
+      const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+      entries.forEach((entry) => {
+        if (entry.status !== "work") return;
+
+        const date = new Date(entry.date + "T00:00:00");
+        const day = date.getDay();
+        const result = calculateDailyBalance(entry, schedules);
+
+        if (!dayMap.has(day)) {
+          dayMap.set(day, []);
+        }
+        dayMap.get(day)!.push(result.actualMinutes);
+      });
+
+      const dayStats = dayNames
+        .map((name, index) => {
+          const minutes = dayMap.get(index) || [];
+          const count = minutes.length;
+          const avgMinutes =
+            count > 0 ? minutes.reduce((a, b) => a + b, 0) / count : 0;
+
+          // Standard deviation for consistency
+          let stdDev = 0;
+          if (count > 1) {
+            const squareDiffs = minutes.map((m) => Math.pow(m - avgMinutes, 2));
+            const avgSquareDiff =
+              squareDiffs.reduce((a, b) => a + b, 0) / count;
+            stdDev = Math.sqrt(avgSquareDiff);
+          }
+
+          return {
+            day: index,
+            name,
+            avgMinutes,
+            avgHoursStr: formatHours(Math.round(avgMinutes)),
+            stdDev,
+            count,
+          };
+        })
+        .filter((s) => s.day >= 1 && s.day <= 5); // Focus on Mon-Fri
+
+      // Calculate percentage for bar height (relative to max avg)
+      const maxAvg = Math.max(...dayStats.map((s) => s.avgMinutes), 1);
+      const dayStatsWithPercent = dayStats.map((s) => ({
+        ...s,
+        percentage: (s.avgMinutes / maxAvg) * 100,
+      }));
+
+      setDayOfWeekStats(dayStatsWithPercent);
+
+      // Intensity Stats
+      const longest = [...dayStats].sort(
+        (a, b) => b.avgMinutes - a.avgMinutes
+      )[0];
+      const daysWithMultipleEntries = dayStats.filter((s) => s.count >= 2);
+      const mostConsistent = [...daysWithMultipleEntries].sort(
+        (a, b) => a.stdDev - b.stdDev
+      )[0];
+
+      setIntensityStats({
+        longestDay: longest && longest.avgMinutes > 0 ? longest.name : "N/A",
+        longestDayAvg:
+          longest && longest.avgMinutes > 0 ? longest.avgHoursStr : "",
+        mostConsistentDay: mostConsistent ? mostConsistent.name : "N/A",
+        needsMoreData: daysWithMultipleEntries.length === 0,
+      });
     } catch (error) {
       console.error("Error fetching stats:", error);
     } finally {
@@ -388,6 +473,122 @@ export const StatsPage: React.FC = () => {
                 {expectedWeeklyHours}h/week
               </span>
             </div>
+          </div>
+
+          {/* Weekly Rhythm */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-amber-50 to-white border-t-4 border-amber-500 shadow-lg rounded-xl p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-amber-500/10 rounded-lg">
+                <svg
+                  className="w-6 h-6 text-amber-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Weekly Rhythm (Avg)
+              </h3>
+            </div>
+            <div className="flex items-end justify-between h-32 gap-3 px-4">
+              {dayOfWeekStats.map((day) => (
+                <div
+                  key={day.day}
+                  className="flex flex-col items-center gap-1 flex-1 h-full"
+                >
+                  <div className="relative w-full h-full flex flex-col justify-end group">
+                    <div
+                      className="w-full bg-amber-400 rounded-t-md transition-all duration-500 ease-out group-hover:bg-amber-500 min-h-[4px]"
+                      style={{ height: `${Math.max(day.percentage, 3)}%` }}
+                    />
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                      {day.avgHoursStr}
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold text-gray-600 uppercase mt-1">
+                    {day.name.charAt(0)}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="mt-4 text-xs text-gray-400 text-center italic">
+              Shows your average worked hours per weekday
+            </p>
+          </div>
+
+          {/* Work Intensity */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-indigo-50 to-white border-t-4 border-indigo-500 shadow-lg rounded-xl p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-indigo-500/10 rounded-lg">
+                <svg
+                  className="w-6 h-6 text-indigo-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Work Intensity
+              </h3>
+            </div>
+            {intensityStats && (
+              <div className="space-y-4 relative">
+                <div className="flex items-center justify-between p-3 bg-white/60 rounded-lg border border-indigo-100">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                      Longest Day
+                    </span>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xl font-bold text-gray-900">
+                        {intensityStats.longestDay}
+                      </span>
+                      {intensityStats.longestDayAvg && (
+                        <span className="text-sm text-indigo-600 font-medium">
+                          ({intensityStats.longestDayAvg})
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-3xl">🏆</div>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-white/60 rounded-lg border border-indigo-100">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                      Most Consistent
+                    </span>
+                    {intensityStats.needsMoreData ? (
+                      <span className="text-sm text-gray-400 italic">
+                        Need 2+ entries per day
+                      </span>
+                    ) : (
+                      <span className="text-xl font-bold text-gray-900">
+                        {intensityStats.mostConsistentDay}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-3xl">🎯</div>
+                </div>
+              </div>
+            )}
+            <p className="mt-4 text-xs text-gray-500">
+              Insights based on your {selectedYear} work patterns.
+            </p>
           </div>
         </div>
       )}
