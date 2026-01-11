@@ -34,6 +34,7 @@ export const StatsPage: React.FC = () => {
       maxPercentage: number;
     }[]
   >([]);
+  const [sickDays, setSickDays] = useState<number>(0);
 
   const user = getCurrentUser();
 
@@ -144,6 +145,12 @@ export const StatsPage: React.FC = () => {
         remaining: allowance - vStats.usedDays - vStats.plannedDays, // Re-calculate remaining based on correct allowance
         allowance: allowance,
       });
+
+      // --- 2b. Sick Days ---
+      const sickDaysCount = entries.filter(
+        (entry) => entry.status === "sick"
+      ).length;
+      setSickDays(sickDaysCount);
 
       // --- 3. Yearly Balance & Average Weekly Hours ---
       // Calculate yearly balance by summing all entry balances
@@ -352,6 +359,40 @@ export const StatsPage: React.FC = () => {
                 </div>
               </dl>
             )}
+          </div>
+
+          {/* Sick Days */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-rose-50 to-white border-t-4 border-rose-400 shadow-lg rounded-xl p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-rose-400/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-rose-400/10 rounded-lg">
+                <svg
+                  className="w-6 h-6 text-rose-500"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Sick Days
+              </h3>
+            </div>
+            <div className="flex items-baseline relative">
+              <span className="text-5xl font-black text-rose-500">
+                {sickDays}
+              </span>
+              <span className="ml-2 text-gray-400 font-medium">days</span>
+            </div>
+            <p className="mt-3 text-sm text-gray-500">
+              Total sick days taken in {selectedYear}
+            </p>
           </div>
 
           {/* Yearly Balance */}
