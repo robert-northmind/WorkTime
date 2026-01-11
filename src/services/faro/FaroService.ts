@@ -56,6 +56,38 @@ export function getFaro(): Faro | null {
   return faro;
 }
 
+export interface FaroUser {
+  id: string;
+  email?: string;
+  username?: string;
+  attributes?: Record<string, string>;
+}
+
+/**
+ * Set the current user for Faro telemetry
+ * All subsequent events will be associated with this user
+ * @param user User information to attach to telemetry
+ */
+export function setFaroUser(user: FaroUser): void {
+  if (!faro) {
+    return;
+  }
+
+  faro.api.setUser(user);
+}
+
+/**
+ * Clear the current user from Faro telemetry
+ * Call this when the user logs out
+ */
+export function clearFaroUser(): void {
+  if (!faro) {
+    return;
+  }
+
+  faro.api.resetUser();
+}
+
 /**
  * Check if Faro is initialized
  * @returns true if Faro is initialized, false otherwise

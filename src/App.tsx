@@ -1,15 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Layout } from './components/Layout';
-import { LoginPage } from './pages/LoginPage';
-import { AddEntryPage } from './pages/AddEntryPage';
-import { TimesheetPage } from './pages/TimesheetPage';
-import { StatsPage } from './pages/StatsPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { subscribeToAuthChanges } from './services/auth/AuthService';
-import type { User } from 'firebase/auth';
+import React, { useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Layout } from "./components/Layout";
+import { LoginPage } from "./pages/LoginPage";
+import { AddEntryPage } from "./pages/AddEntryPage";
+import { TimesheetPage } from "./pages/TimesheetPage";
+import { StatsPage } from "./pages/StatsPage";
+import { SettingsPage } from "./pages/SettingsPage";
+import { subscribeToAuthChanges } from "./services/auth/AuthService";
+import { setFaroUser, clearFaroUser } from "./services/faro/FaroService";
+import type { User } from "firebase/auth";
 
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<User | null | undefined>(undefined);
 
   useEffect(() => {
@@ -20,7 +23,11 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   }, []);
 
   if (user === undefined) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center h-screen">
+        Loading...
+      </div>
+    );
   }
 
   if (!user) {
@@ -31,16 +38,35 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 };
 
 const App: React.FC = () => {
+  // Sync authenticated user with Faro for telemetry
+  useEffect(() => {
+    const unsubscribe = subscribeToAuthChanges((user) => {
+      if (user) {
+        setFaroUser({
+          id: user.uid,
+          email: user.email || undefined,
+          username: user.displayName || undefined,
+        });
+      } else {
+        clearFaroUser();
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        
-        <Route path="/" element={
-          <ProtectedRoute>
-            <Layout />
-          </ProtectedRoute>
-        }>
+
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<Navigate to="/timesheet" replace />} />
           <Route path="entry" element={<AddEntryPage />} />
           <Route path="timesheet" element={<TimesheetPage />} />
