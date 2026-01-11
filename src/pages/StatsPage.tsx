@@ -32,6 +32,7 @@ export const StatsPage: React.FC = () => {
       avgPercentage: number;
       minPercentage: number;
       maxPercentage: number;
+      count: number;
     }[]
   >([]);
   const [sickDays, setSickDays] = useState<number>(0);
@@ -380,9 +381,7 @@ export const StatsPage: React.FC = () => {
                   />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">
-                Sick Days
-              </h3>
+              <h3 className="text-lg font-semibold text-gray-900">Sick Days</h3>
             </div>
             <div className="flex items-baseline relative">
               <span className="text-5xl font-black text-rose-500">
