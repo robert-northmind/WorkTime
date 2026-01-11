@@ -48,6 +48,7 @@ export const TimesheetPage: React.FC = () => {
   const [timeFormat, setTimeFormat] = useState<"12h" | "24h">("24h");
   const [loading, setLoading] = useState(false);
   const [showFloatingBar, setShowFloatingBar] = useState(false);
+  const [hideFutureWeeks, setHideFutureWeeks] = useState(true);
   const hasRestoredScroll = useRef(false);
   const toolbarRef = useRef<HTMLDivElement>(null);
 
@@ -183,6 +184,22 @@ export const TimesheetPage: React.FC = () => {
     });
   }
 
+  // Filter out future weeks if toggle is on
+  const todayStr = new Date().toISOString().split("T")[0];
+  const { year: todayYear, week: todayWeek } = getWeekNumber(todayStr);
+  const filteredWeeks = hideFutureWeeks
+    ? groupedByWeek.filter((week) => {
+        const [weekYearStr, weekNumStr] = week.weekKey.split("-W");
+        const weekYear = parseInt(weekYearStr, 10);
+        const weekNum = parseInt(weekNumStr, 10);
+        // Keep if week is current or in the past
+        return (
+          weekYear < todayYear ||
+          (weekYear === todayYear && weekNum <= todayWeek)
+        );
+      })
+    : groupedByWeek;
+
   // Helper to check if a date string is today
   const isToday = (dateStr: string) => {
     const today = new Date();
@@ -226,19 +243,25 @@ export const TimesheetPage: React.FC = () => {
           return;
         }
       } else if (target.type === "weekHeader") {
-        const desktopHeader = document.getElementById(
-          `week-header-desktop-${target.weekKey}`
+        const desktopCard = document.getElementById(
+          `week-card-desktop-${target.weekKey}`
         );
-        const mobileHeader = document.getElementById(
-          `week-header-mobile-${target.weekKey}`
+        const mobileCard = document.getElementById(
+          `week-card-mobile-${target.weekKey}`
         );
 
-        if (desktopHeader && desktopHeader.offsetParent !== null) {
-          desktopHeader.scrollIntoView({ behavior: "smooth", block: "start" });
+        const scrollToWithOffset = (element: HTMLElement, offset: number) => {
+          const elementPosition = element.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.scrollY - offset;
+          window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+        };
+
+        if (desktopCard && desktopCard.offsetParent !== null) {
+          scrollToWithOffset(desktopCard, 24);
           return;
         }
-        if (mobileHeader && mobileHeader.offsetParent !== null) {
-          mobileHeader.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (mobileCard && mobileCard.offsetParent !== null) {
+          scrollToWithOffset(mobileCard, 24);
           return;
         }
       }
@@ -270,6 +293,39 @@ export const TimesheetPage: React.FC = () => {
               </option>
             ))}
           </select>
+          <button
+            onClick={() => setHideFutureWeeks(!hideFutureWeeks)}
+            className={`inline-flex items-center px-3 py-2 border shadow-sm text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+              hideFutureWeeks
+                ? "border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+                : "border-purple-300 text-purple-700 bg-purple-50 hover:bg-purple-100"
+            }`}
+            title={hideFutureWeeks ? "Show future weeks" : "Hide future weeks"}
+          >
+            <svg
+              className="h-4 w-4 mr-1.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              {hideFutureWeeks ? (
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                />
+              ) : (
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                />
+              )}
+            </svg>
+            Future
+          </button>
           <button
             onClick={scrollToToday}
             className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -333,7 +389,7 @@ export const TimesheetPage: React.FC = () => {
                 </p>
               </div>
             ) : (
-              groupedByWeek.map((week) => {
+              filteredWeeks.map((week) => {
                 // Calculate weekly totals
                 let weeklyBalanceMinutes = 0;
                 let weeklyWorkedMinutes = 0;
@@ -366,7 +422,8 @@ export const TimesheetPage: React.FC = () => {
                 return (
                   <div
                     key={week.weekKey}
-                    className={`relative overflow-hidden shadow-lg sm:rounded-xl transition-all duration-300 hover:shadow-xl ${
+                    id={`week-card-desktop-${week.weekKey}`}
+                    className={`relative overflow-hidden shadow-lg sm:rounded-xl transition-all duration-300 hover:shadow-xl scroll-mt-6 ${
                       isCurrentWeek ? "ring-2 ring-amber-400 ring-offset-2" : ""
                     } ${
                       balanceTheme === "emerald"
@@ -389,7 +446,6 @@ export const TimesheetPage: React.FC = () => {
 
                     {/* Week Header */}
                     <div
-                      id={`week-header-desktop-${week.weekKey}`}
                       className={`relative px-6 py-4 border-b flex items-center justify-between ${
                         isCurrentWeek
                           ? "bg-amber-50/80 border-amber-300"
@@ -767,7 +823,7 @@ export const TimesheetPage: React.FC = () => {
                 </p>
               </div>
             ) : (
-              groupedByWeek.map((week) => {
+              filteredWeeks.map((week) => {
                 // Calculate weekly totals
                 let weeklyBalanceMinutes = 0;
                 let weeklyWorkedMinutes = 0;
@@ -798,7 +854,8 @@ export const TimesheetPage: React.FC = () => {
                 return (
                   <div
                     key={week.weekKey}
-                    className={`relative overflow-hidden shadow-lg rounded-xl transition-all duration-300 ${
+                    id={`week-card-mobile-${week.weekKey}`}
+                    className={`relative overflow-hidden shadow-lg rounded-xl transition-all duration-300 scroll-mt-6 ${
                       isCurrentWeek ? "ring-2 ring-amber-400 ring-offset-2" : ""
                     } ${
                       mobileBalanceTheme === "emerald"
@@ -821,7 +878,6 @@ export const TimesheetPage: React.FC = () => {
 
                     {/* Weekly Header */}
                     <div
-                      id={`week-header-mobile-${week.weekKey}`}
                       className={`relative px-4 py-3 border-b ${
                         isCurrentWeek
                           ? "bg-amber-50/80 border-amber-300"
@@ -1132,6 +1188,43 @@ export const TimesheetPage: React.FC = () => {
                 </option>
               ))}
             </select>
+
+            {/* Future Toggle */}
+            <button
+              onClick={() => setHideFutureWeeks(!hideFutureWeeks)}
+              className={`inline-flex items-center justify-center px-3 min-h-[44px] border shadow-sm text-sm font-medium rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                hideFutureWeeks
+                  ? "border-gray-300 text-gray-700 bg-white hover:bg-gray-50 active:bg-gray-100"
+                  : "border-purple-300 text-purple-700 bg-purple-50 hover:bg-purple-100 active:bg-purple-200"
+              }`}
+              title={
+                hideFutureWeeks ? "Show future weeks" : "Hide future weeks"
+              }
+            >
+              <svg
+                className="h-5 w-5 mr-1.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                {hideFutureWeeks ? (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                  />
+                ) : (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                  />
+                )}
+              </svg>
+              Future
+            </button>
 
             {/* Today Button - larger touch target */}
             <button
