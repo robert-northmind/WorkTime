@@ -26,16 +26,14 @@ export const StatsPage: React.FC = () => {
       day: number;
       name: string;
       avgMinutes: number;
+      minMinutes: number;
+      maxMinutes: number;
       avgHoursStr: string;
-      percentage: number;
+      avgPercentage: number;
+      minPercentage: number;
+      maxPercentage: number;
     }[]
   >([]);
-  const [intensityStats, setIntensityStats] = useState<{
-    longestDay: string;
-    longestDayAvg: string;
-    mostConsistentDay: string;
-    needsMoreData: boolean;
-  } | null>(null);
 
   const user = getCurrentUser();
 
@@ -234,52 +232,31 @@ export const StatsPage: React.FC = () => {
           const count = minutes.length;
           const avgMinutes =
             count > 0 ? minutes.reduce((a, b) => a + b, 0) / count : 0;
-
-          // Standard deviation for consistency
-          let stdDev = 0;
-          if (count > 1) {
-            const squareDiffs = minutes.map((m) => Math.pow(m - avgMinutes, 2));
-            const avgSquareDiff =
-              squareDiffs.reduce((a, b) => a + b, 0) / count;
-            stdDev = Math.sqrt(avgSquareDiff);
-          }
+          const minMinutes = count > 0 ? Math.min(...minutes) : 0;
+          const maxMinutes = count > 0 ? Math.max(...minutes) : 0;
 
           return {
             day: index,
             name,
             avgMinutes,
+            minMinutes,
+            maxMinutes,
             avgHoursStr: formatHours(Math.round(avgMinutes)),
-            stdDev,
             count,
           };
         })
         .filter((s) => s.day >= 1 && s.day <= 5); // Focus on Mon-Fri
 
-      // Calculate percentage for bar height (relative to max avg)
-      const maxAvg = Math.max(...dayStats.map((s) => s.avgMinutes), 1);
+      // Calculate percentages for bar heights (relative to global max)
+      const globalMax = Math.max(...dayStats.map((s) => s.maxMinutes), 1);
       const dayStatsWithPercent = dayStats.map((s) => ({
         ...s,
-        percentage: (s.avgMinutes / maxAvg) * 100,
+        avgPercentage: (s.avgMinutes / globalMax) * 100,
+        minPercentage: (s.minMinutes / globalMax) * 100,
+        maxPercentage: (s.maxMinutes / globalMax) * 100,
       }));
 
       setDayOfWeekStats(dayStatsWithPercent);
-
-      // Intensity Stats
-      const longest = [...dayStats].sort(
-        (a, b) => b.avgMinutes - a.avgMinutes
-      )[0];
-      const daysWithMultipleEntries = dayStats.filter((s) => s.count >= 2);
-      const mostConsistent = [...daysWithMultipleEntries].sort(
-        (a, b) => a.stdDev - b.stdDev
-      )[0];
-
-      setIntensityStats({
-        longestDay: longest && longest.avgMinutes > 0 ? longest.name : "N/A",
-        longestDayAvg:
-          longest && longest.avgMinutes > 0 ? longest.avgHoursStr : "",
-        mostConsistentDay: mostConsistent ? mostConsistent.name : "N/A",
-        needsMoreData: daysWithMultipleEntries.length === 0,
-      });
     } catch (error) {
       console.error("Error fetching stats:", error);
     } finally {
@@ -498,96 +475,47 @@ export const StatsPage: React.FC = () => {
                 Weekly Rhythm (Avg)
               </h3>
             </div>
-            <div className="flex items-end justify-between h-32 gap-3 px-4">
+            <div className="flex items-end justify-between h-40 gap-2 px-2">
               {dayOfWeekStats.map((day) => (
                 <div
                   key={day.day}
-                  className="flex flex-col items-center gap-1 flex-1 h-full"
+                  className="flex flex-col items-center flex-1 h-full"
                 >
-                  <div className="relative w-full h-full flex flex-col justify-end group">
+                  {/* Hours label - always visible */}
+                  <span className="text-xs font-semibold text-amber-700 mb-1 whitespace-nowrap">
+                    {day.avgHoursStr}
+                  </span>
+                  {/* Bar container */}
+                  <div className="relative w-full flex-1 flex flex-col justify-end">
+                    {/* Max bar - lighter/faded, stands behind avg bar */}
+                    {day.count > 1 && (
+                      <div
+                        className="absolute bottom-0 left-0 w-full bg-amber-200/30 rounded-t-md border-t-2 border-dashed border-amber-400/70"
+                        style={{ height: `${Math.max(day.maxPercentage, 3)}%` }}
+                      />
+                    )}
+                    {/* Average bar - solid, on top */}
                     <div
-                      className="w-full bg-amber-400 rounded-t-md transition-all duration-500 ease-out group-hover:bg-amber-500 min-h-[4px]"
-                      style={{ height: `${Math.max(day.percentage, 3)}%` }}
+                      className="relative z-10 w-full bg-amber-400 rounded-t-md transition-all duration-500 ease-out hover:bg-amber-500 min-h-[4px]"
+                      style={{ height: `${Math.max(day.avgPercentage, 3)}%` }}
                     />
-                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
-                      {day.avgHoursStr}
-                    </div>
+                    {/* Min line - on top of avg bar */}
+                    {day.count > 1 && (
+                      <div
+                        className="absolute left-0 w-full h-0 border-t-2 border-dashed border-amber-200 z-20"
+                        style={{ bottom: `${day.minPercentage}%` }}
+                      />
+                    )}
                   </div>
+                  {/* Day label */}
                   <span className="text-xs font-bold text-gray-600 uppercase mt-1">
                     {day.name.charAt(0)}
                   </span>
                 </div>
               ))}
             </div>
-            <p className="mt-4 text-xs text-gray-400 text-center italic">
-              Shows your average worked hours per weekday
-            </p>
-          </div>
-
-          {/* Work Intensity */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-indigo-50 to-white border-t-4 border-indigo-500 shadow-lg rounded-xl p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-indigo-500/10 rounded-lg">
-                <svg
-                  className="w-6 h-6 text-indigo-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900">
-                Work Intensity
-              </h3>
-            </div>
-            {intensityStats && (
-              <div className="space-y-4 relative">
-                <div className="flex items-center justify-between p-3 bg-white/60 rounded-lg border border-indigo-100">
-                  <div className="flex flex-col">
-                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                      Longest Day
-                    </span>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-xl font-bold text-gray-900">
-                        {intensityStats.longestDay}
-                      </span>
-                      {intensityStats.longestDayAvg && (
-                        <span className="text-sm text-indigo-600 font-medium">
-                          ({intensityStats.longestDayAvg})
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-3xl">🏆</div>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-white/60 rounded-lg border border-indigo-100">
-                  <div className="flex flex-col">
-                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                      Most Consistent
-                    </span>
-                    {intensityStats.needsMoreData ? (
-                      <span className="text-sm text-gray-400 italic">
-                        Need 2+ entries per day
-                      </span>
-                    ) : (
-                      <span className="text-xl font-bold text-gray-900">
-                        {intensityStats.mostConsistentDay}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-3xl">🎯</div>
-                </div>
-              </div>
-            )}
-            <p className="mt-4 text-xs text-gray-500">
-              Insights based on your {selectedYear} work patterns.
+            <p className="mt-3 text-xs text-gray-400 text-center italic">
+              Solid bar = avg, dashed lines = min & max
             </p>
           </div>
         </div>
