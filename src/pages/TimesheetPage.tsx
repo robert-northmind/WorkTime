@@ -781,7 +781,7 @@ export const TimesheetPage: React.FC = () => {
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 {entry.extraHours
-                                  ? `+${entry.extraHours}h`
+                                  ? `+${formatHours(entry.extraHours * 60)}`
                                   : "-"}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 truncate max-w-xs">
@@ -1143,7 +1143,7 @@ export const TimesheetPage: React.FC = () => {
                               <div className="mt-2 pt-2 border-t border-gray-100 flex flex-wrap gap-2 text-xs text-gray-500">
                                 {entry.extraHours > 0 && (
                                   <span className="bg-gray-100 px-1.5 py-0.5 rounded">
-                                    Extra: +{entry.extraHours}h
+                                    Extra: +{formatHours(entry.extraHours * 60)}
                                   </span>
                                 )}
                                 {entry.notes && (
