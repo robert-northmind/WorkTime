@@ -173,18 +173,18 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialDat
                 className="block w-full rounded-xl border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-3 bg-white/80 font-medium"
               />
             </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Extra Hours (hh:mm)</label>
-              <input
-                type="time"
-                value={extraTime}
-                onChange={(e) => setExtraTime(e.target.value)}
-                className="block w-full rounded-xl border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-3 bg-white/80 font-medium"
-              />
-            </div>
           </>
         )}
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Extra Hours (hh:mm)</label>
+          <input
+            type="time"
+            value={extraTime}
+            onChange={(e) => setExtraTime(e.target.value)}
+            className="block w-full rounded-xl border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-3 bg-white/80 font-medium"
+          />
+        </div>
       </div>
 
       <div className="relative">

@@ -6,4 +6,11 @@ export default {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
   },
   testMatch: ['<rootDir>/tests/**/*.test.(ts|tsx)', '<rootDir>/src/**/*.test.(ts|tsx)'],
+  transform: {
+    '^.+\\.tsx?$': ['ts-jest', {
+      tsconfig: {
+        esModuleInterop: true,
+      },
+    }],
+  },
 };
