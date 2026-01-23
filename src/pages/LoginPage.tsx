@@ -21,9 +21,10 @@ export const LoginPage: React.FC = () => {
         await login(email, password);
       }
       navigate('/');
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as { message?: string };
       if (isSignup) {
-        setError(err?.message || 'Failed to create account. Please try again.');
+        setError(error?.message || 'Failed to create account. Please try again.');
       } else {
         setError('Failed to login. Please check your credentials.');
       }

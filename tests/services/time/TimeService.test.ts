@@ -16,8 +16,7 @@ describe('TimeService', () => {
 
     it('handles invalid inputs gracefully', () => {
       expect(timeToMinutes('')).toBe(0);
-      // @ts-ignore
-      expect(timeToMinutes(null)).toBe(0);
+      expect(timeToMinutes(null as unknown as string)).toBe(0);
     });
   });
 

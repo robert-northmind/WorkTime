@@ -42,7 +42,11 @@ export const TimesheetPage: React.FC = () => {
   const navigate = useNavigate();
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [entries, setEntries] = useState<FirestoreDailyEntry[]>([]);
-  const [schedules, setSchedules] = useState<any[]>([
+  const [schedules, setSchedules] = useState<Array<{
+    effectiveDate: string;
+    weeklyHours?: number;
+    workDays: number[];
+  }>>([
     {
       effectiveDate: "2000-01-01",
       workDays: [1, 2, 3, 4, 5],
@@ -103,6 +107,7 @@ export const TimesheetPage: React.FC = () => {
   useEffect(() => {
     if (!user) return;
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, selectedYear]);
 
   const fetchData = async () => {

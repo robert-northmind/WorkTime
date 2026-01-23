@@ -46,6 +46,7 @@ export const AddEntryPage: React.FC = () => {
   useEffect(() => {
     if (!user) return;
     fetchEntry();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate, user]);
 
   const fetchEntry = async () => {
@@ -97,7 +98,7 @@ export const AddEntryPage: React.FC = () => {
   const handleFormChange = React.useCallback(
     (updatedFields: Partial<FirestoreDailyEntry>) => {
       // Create a temporary entry object for calculation
-      const tempEntry: any = {
+      const tempEntry: Partial<FirestoreDailyEntry> & { uid: string; updatedAt: string } = {
         ...updatedFields,
         uid: user?.uid || "",
         updatedAt: new Date().toISOString(),

@@ -6,8 +6,6 @@ interface MilestoneBannerProps {
 }
 
 export const MilestoneBanner: React.FC<MilestoneBannerProps> = ({ display }) => {
-  const isPeriod = display.milestone.type === 'period';
-
   return (
     <div className="relative overflow-hidden bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-amber-400 rounded-lg px-4 py-3 shadow-sm">
       <div className="flex items-center gap-3">

@@ -13,7 +13,11 @@ export const SettingsPage: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   
   // Settings State
-  const [schedules, setSchedules] = useState<any[]>([]);
+  const [schedules, setSchedules] = useState<Array<{
+    effectiveDate: string;
+    weeklyHours: number;
+    workDays: number[];
+  }>>([]);
   const [vacationSettings, setVacationSettings] = useState<{
     allowanceDays: number;
     yearlyAllowances: Record<string, number>;
@@ -52,11 +56,13 @@ export const SettingsPage: React.FC = () => {
   useEffect(() => {
     if (!user) return;
     loadSettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   // Update form when selected year or settings change
   useEffect(() => {
     updateFormForYear(selectedYear);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedYear, schedules, vacationSettings, yearlyComments, yearlyMilestones]);
 
   const loadSettings = async () => {

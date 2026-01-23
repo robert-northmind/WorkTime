@@ -46,6 +46,7 @@ export const StatsPage: React.FC = () => {
   useEffect(() => {
     if (!user) return;
     fetchStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, selectedYear]);
 
   const fetchStats = async () => {
@@ -68,7 +69,11 @@ export const StatsPage: React.FC = () => {
         yearlyAllowances: {},
       };
 
-      let schedules: any[] = [
+      let schedules: Array<{
+        effectiveDate: string;
+        weeklyHours: number;
+        workDays: number[];
+      }> = [
         {
           effectiveDate: "2000-01-01",
           weeklyHours: 40,

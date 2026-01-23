@@ -2,7 +2,6 @@ import {
   findScrollTargets,
   getWeekNumber,
   WeekGroup,
-  ScrollTargetResult,
 } from "../../../src/services/scroll/ScrollService";
 
 describe("getWeekNumber", () => {

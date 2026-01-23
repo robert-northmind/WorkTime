@@ -6,7 +6,6 @@ import {
   collectRelevantMilestones,
   getNextMilestoneDisplay,
   type Milestone,
-  type MilestoneDisplay,
 } from '../../../src/services/milestone/MilestoneService';
 
 describe('calculateWeeksUntil', () => {

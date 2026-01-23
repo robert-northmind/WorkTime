@@ -9,6 +9,7 @@ interface Particle {
   velocityX: number;
   velocityY: number;
   size: number;
+  borderRadius: string;
 }
 
 interface SuccessConfettiProps {
@@ -39,7 +40,8 @@ export const SuccessConfetti: React.FC<SuccessConfettiProps> = ({ trigger, butto
       // Create radial burst - particles go in all directions
       const angle = (i / 15) * Math.PI * 2; // Distribute evenly in a circle
       const speed = 60 + Math.random() * 40; // Random speed between 60-100
-      
+      const randomShape = Math.random();
+
       return {
         id: i,
         x: startX,
@@ -49,6 +51,7 @@ export const SuccessConfetti: React.FC<SuccessConfettiProps> = ({ trigger, butto
         velocityX: Math.cos(angle) * speed,
         velocityY: Math.sin(angle) * speed,
         size: Math.random() * 6 + 4,
+        borderRadius: randomShape > 0.5 ? '50%' : '2px',
       };
     });
 
@@ -77,7 +80,7 @@ export const SuccessConfetti: React.FC<SuccessConfettiProps> = ({ trigger, butto
             width: `${particle.size}px`,
             height: `${particle.size}px`,
             backgroundColor: particle.color,
-            borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+            borderRadius: particle.borderRadius,
             transform: `rotate(${particle.rotation}deg)`,
             animation: `confetti-fall 1s ease-out forwards`,
             '--velocity-x': `${particle.velocityX}px`,
