@@ -7,7 +7,7 @@ import {
 } from "../services/firestore/FirestoreService";
 import type { FirestoreDailyEntry } from "../types/firestore";
 import { getCurrentUser } from "../services/auth/AuthService";
-import { calculateDailyBalance } from "../services/balance/BalanceService";
+import { calculateDailyBalance, type DailyEntry } from "../services/balance/BalanceService";
 import { getExpectedDailyHours } from "../services/schedule/ScheduleService";
 import { formatHours } from "../services/time/TimeService";
 import { trackUserAction } from "../services/faro/FaroService";
@@ -97,11 +97,19 @@ export const AddEntryPage: React.FC = () => {
 
   const handleFormChange = React.useCallback(
     (updatedFields: Partial<FirestoreDailyEntry>) => {
+      // Need date to calculate balance
+      if (!updatedFields.date) return;
+
       // Create a temporary entry object for calculation
-      const tempEntry: Partial<FirestoreDailyEntry> & { uid: string; updatedAt: string } = {
-        ...updatedFields,
+      const tempEntry: DailyEntry = {
+        date: updatedFields.date,
+        startTime: updatedFields.startTime || "",
+        endTime: updatedFields.endTime || "",
+        lunchMinutes: updatedFields.lunchMinutes || 0,
+        extraHours: updatedFields.extraHours || 0,
+        status: updatedFields.status || "work",
+        notes: updatedFields.notes,
         uid: user?.uid || "",
-        updatedAt: new Date().toISOString(),
       };
 
       // Calculate balance preview

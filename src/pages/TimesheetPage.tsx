@@ -44,11 +44,12 @@ export const TimesheetPage: React.FC = () => {
   const [entries, setEntries] = useState<FirestoreDailyEntry[]>([]);
   const [schedules, setSchedules] = useState<Array<{
     effectiveDate: string;
-    weeklyHours?: number;
+    weeklyHours: number;
     workDays: number[];
   }>>([
     {
       effectiveDate: "2000-01-01",
+      weeklyHours: 40,
       workDays: [1, 2, 3, 4, 5],
     },
   ]);
