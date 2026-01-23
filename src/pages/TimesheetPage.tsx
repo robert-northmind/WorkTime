@@ -11,7 +11,12 @@ import {
   type WeekGroup,
 } from "../services/scroll/ScrollService";
 import { fillWeekDays } from "../services/week/WeekService";
-import type { FirestoreDailyEntry, CustomPTOType } from "../types/firestore";
+import type { FirestoreDailyEntry, CustomPTOType, Milestone } from "../types/firestore";
+import { MilestoneBanner } from "../components/MilestoneBanner";
+import {
+  collectRelevantMilestones,
+  getNextMilestoneDisplay,
+} from "../services/milestone/MilestoneService";
 
 const SCROLL_POSITION_KEY = "timesheet-scroll-position";
 
@@ -46,6 +51,7 @@ export const TimesheetPage: React.FC = () => {
   const [customPTO, setCustomPTO] = useState<CustomPTOType[]>([]);
   const [ptoColors, setPtoColors] = useState<Record<string, string>>({});
   const [timeFormat, setTimeFormat] = useState<"12h" | "24h">("24h");
+  const [yearlyMilestones, setYearlyMilestones] = useState<Record<string, Milestone[]>>({});
   const [loading, setLoading] = useState(false);
   const [showFloatingBar, setShowFloatingBar] = useState(false);
   const [hideFutureWeeks, setHideFutureWeeks] = useState(true);
@@ -120,6 +126,9 @@ export const TimesheetPage: React.FC = () => {
         }
         if (userDoc.settings.timeFormat) {
           setTimeFormat(userDoc.settings.timeFormat);
+        }
+        if (userDoc.settings.yearlyMilestones) {
+          setYearlyMilestones(userDoc.settings.yearlyMilestones);
         }
       }
 
@@ -270,6 +279,10 @@ export const TimesheetPage: React.FC = () => {
 
   if (!user) return <div>Please log in</div>;
 
+  // Compute milestone display
+  const relevantMilestones = collectRelevantMilestones(yearlyMilestones, selectedYear, todayStr);
+  const milestoneDisplay = getNextMilestoneDisplay(relevantMilestones, todayStr);
+
   return (
     <div className="space-y-6">
       <div
@@ -359,6 +372,8 @@ export const TimesheetPage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {milestoneDisplay && <MilestoneBanner display={milestoneDisplay} />}
 
       {loading ? (
         <div>Loading...</div>

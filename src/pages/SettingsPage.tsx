@@ -4,7 +4,8 @@ import {
   getUser, 
   saveUser
 } from '../services/firestore/FirestoreService';
-import type { CustomPTOType } from '../types/firestore';
+import type { CustomPTOType, Milestone } from '../types/firestore';
+import { sortMilestonesByDate } from '../services/milestone/MilestoneService';
 import { DeveloperZone } from '../components/DeveloperZone';
 
 export const SettingsPage: React.FC = () => {
@@ -18,6 +19,7 @@ export const SettingsPage: React.FC = () => {
     yearlyAllowances: Record<string, number>;
   }>({ allowanceDays: 25, yearlyAllowances: {} });
   const [yearlyComments, setYearlyComments] = useState<Record<string, string>>({});
+  const [yearlyMilestones, setYearlyMilestones] = useState<Record<string, Milestone[]>>({});
   
   // PTO Settings
   const [customPTO, setCustomPTO] = useState<CustomPTOType[]>([]);
@@ -33,6 +35,9 @@ export const SettingsPage: React.FC = () => {
   const [weeklyHours, setWeeklyHours] = useState(40);
   const [vacationDays, setVacationDays] = useState(27);
   const [yearComment, setYearComment] = useState('');
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [showAddMilestone, setShowAddMilestone] = useState(false);
+  const [newMilestone, setNewMilestone] = useState<Omit<Milestone, 'id'>>({ name: '', date: '', type: 'period' });
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -52,7 +57,7 @@ export const SettingsPage: React.FC = () => {
   // Update form when selected year or settings change
   useEffect(() => {
     updateFormForYear(selectedYear);
-  }, [selectedYear, schedules, vacationSettings, yearlyComments]);
+  }, [selectedYear, schedules, vacationSettings, yearlyComments, yearlyMilestones]);
 
   const loadSettings = async () => {
     if (!user) return;
@@ -70,6 +75,9 @@ export const SettingsPage: React.FC = () => {
         }
         if (userDoc.settings.yearlyComments) {
           setYearlyComments(userDoc.settings.yearlyComments);
+        }
+        if (userDoc.settings.yearlyMilestones) {
+          setYearlyMilestones(userDoc.settings.yearlyMilestones);
         }
         if (userDoc.settings.customPTO) {
           setCustomPTO(userDoc.settings.customPTO);
@@ -109,6 +117,12 @@ export const SettingsPage: React.FC = () => {
 
     // 3. Yearly Comment
     setYearComment(yearlyComments[year.toString()] || '');
+
+    // 4. Milestones
+    const yearMilestones = yearlyMilestones[year.toString()] || [];
+    setMilestones(sortMilestonesByDate(yearMilestones));
+    setShowAddMilestone(false);
+    setNewMilestone({ name: '', date: `${year}-12-31`, type: 'period' });
   };
 
   const handleSaveYearly = async () => {
@@ -147,6 +161,12 @@ export const SettingsPage: React.FC = () => {
         [selectedYear.toString()]: yearComment
       };
 
+      // Update Yearly Milestones
+      const newYearlyMilestones = {
+        ...yearlyMilestones,
+        [selectedYear.toString()]: milestones
+      };
+
       const settings = {
         schedules: newSchedules,
         vacation: {
@@ -156,6 +176,7 @@ export const SettingsPage: React.FC = () => {
           yearlyAllowances: newVacationSettings.yearlyAllowances
         },
         yearlyComments: newYearlyComments,
+        yearlyMilestones: newYearlyMilestones,
         customPTO, // Preserve current global settings
         ptoColors, // Preserve current global settings
       };
@@ -171,6 +192,7 @@ export const SettingsPage: React.FC = () => {
       setSchedules(newSchedules);
       setVacationSettings(newVacationSettings);
       setYearlyComments(newYearlyComments);
+      setYearlyMilestones(newYearlyMilestones);
       
       setYearlyMessage(`Yearly settings for ${selectedYear} saved successfully!`);
       
@@ -200,6 +222,7 @@ export const SettingsPage: React.FC = () => {
           yearlyAllowances: vacationSettings.yearlyAllowances
         },
         yearlyComments, // Preserve current yearly settings
+        yearlyMilestones, // Preserve current yearly settings
         customPTO,
         ptoColors,
         timeFormat,
@@ -320,6 +343,131 @@ export const SettingsPage: React.FC = () => {
                 placeholder={`Add notes about ${selectedYear} configuration...`}
               />
             </div>
+          </div>
+
+          <div className="relative">
+            <div className="flex justify-between items-center mb-3">
+              <h4 className="text-xs font-semibold text-cyan-700 uppercase tracking-wider">Milestones</h4>
+              {!showAddMilestone && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewMilestone({ name: '', date: `${selectedYear}-12-31`, type: 'period' });
+                    setShowAddMilestone(true);
+                  }}
+                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-semibold rounded-lg text-cyan-700 bg-cyan-100 hover:bg-cyan-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 transition-colors"
+                >
+                  <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add Milestone
+                </button>
+              )}
+            </div>
+
+            {/* Add Milestone Form */}
+            {showAddMilestone && (
+              <div className="bg-cyan-50 border border-cyan-200 rounded-xl p-4 mb-3">
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="text"
+                      value={newMilestone.name}
+                      onChange={(e) => setNewMilestone({ ...newMilestone, name: e.target.value })}
+                      placeholder="Milestone name (e.g., FY26 Q4)"
+                      className="flex-1 px-3 py-2 rounded-lg border-cyan-200 focus:ring-cyan-500 focus:border-cyan-500 text-sm border bg-white"
+                      autoFocus
+                    />
+                    <select
+                      value={newMilestone.type}
+                      onChange={(e) => setNewMilestone({ ...newMilestone, type: e.target.value as 'period' | 'event' })}
+                      className="px-3 py-2 rounded-lg border-cyan-200 focus:ring-cyan-500 focus:border-cyan-500 text-sm border bg-white"
+                    >
+                      <option value="period">Period</option>
+                      <option value="event">Event</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="flex items-center gap-2 flex-1">
+                      <label className="text-sm text-cyan-700 whitespace-nowrap">
+                        {newMilestone.type === 'period' ? 'End date:' : 'Date:'}
+                      </label>
+                      <input
+                        type="date"
+                        value={newMilestone.date}
+                        onChange={(e) => setNewMilestone({ ...newMilestone, date: e.target.value })}
+                        className="flex-1 px-3 py-2 rounded-lg border-cyan-200 focus:ring-cyan-500 focus:border-cyan-500 text-sm border bg-white"
+                      />
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddMilestone(false)}
+                        className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (newMilestone.name.trim() && newMilestone.date) {
+                            const id = Date.now().toString();
+                            setMilestones([...milestones, { ...newMilestone, id, name: newMilestone.name.trim() }]);
+                            setShowAddMilestone(false);
+                            setNewMilestone({ name: '', date: `${selectedYear}-12-31`, type: 'period' });
+                          }
+                        }}
+                        disabled={!newMilestone.name.trim() || !newMilestone.date}
+                        className="px-4 py-2 text-sm font-semibold text-white bg-cyan-600 hover:bg-cyan-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Milestone Cards */}
+            {milestones.length === 0 && !showAddMilestone ? (
+              <div className="bg-white/60 rounded-xl p-4 text-center">
+                <p className="text-sm text-gray-500">No milestones for {selectedYear}.</p>
+                <p className="text-xs text-gray-400 mt-1">Track fiscal quarters, deadlines, or product launches.</p>
+              </div>
+            ) : milestones.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {sortMilestonesByDate(milestones).map((milestone) => (
+                  <div
+                    key={milestone.id}
+                    className="group flex items-center gap-2 px-3 py-2 bg-white/80 border border-gray-200 rounded-lg hover:border-cyan-300 hover:bg-cyan-50/50 transition-colors"
+                  >
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-gray-800">{milestone.name}</span>
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                        <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                          milestone.type === 'period'
+                            ? 'bg-cyan-100 text-cyan-700'
+                            : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {milestone.type === 'period' ? 'Period' : 'Event'}
+                        </span>
+                        <span>{new Date(milestone.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setMilestones(milestones.filter(m => m.id !== milestone.id))}
+                      className="ml-1 p-1 text-gray-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
+                      title="Delete milestone"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="relative flex flex-col-reverse sm:flex-row items-center justify-end gap-4 pt-2">

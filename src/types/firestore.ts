@@ -8,6 +8,13 @@ export interface CustomPTOType {
   color: string;
 }
 
+export interface Milestone {
+  id: string;
+  name: string;
+  date: string;              // YYYY-MM-DD
+  type: 'period' | 'event';
+}
+
 export interface UserDocument {
   uid: string;
   email: string;
@@ -19,6 +26,7 @@ export interface UserDocument {
     customPTO?: CustomPTOType[];
     ptoColors?: Record<string, string>; // type -> color
     timeFormat?: '12h' | '24h'; // Time display format (default: '24h')
+    yearlyMilestones?: Record<string, Milestone[]>; // year -> milestones
   };
   createdAt: string;
 }
