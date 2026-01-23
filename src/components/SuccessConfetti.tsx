@@ -36,10 +36,10 @@ export const SuccessConfetti: React.FC<SuccessConfettiProps> = ({ trigger, butto
 
     // Create particles
     const colors = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ec4899'];
-    const newParticles: Particle[] = Array.from({ length: 15 }, (_, i) => {
+    const newParticles: Particle[] = Array.from({ length: 30 }, (_, i) => {
       // Create radial burst - particles go in all directions
-      const angle = (i / 15) * Math.PI * 2; // Distribute evenly in a circle
-      const speed = 60 + Math.random() * 40; // Random speed between 60-100
+      const angle = (i / 30) * Math.PI * 2 + (Math.random() - 0.5) * 0.3; // Distribute with slight randomness
+      const speed = 80 + Math.random() * 60; // Random speed between 80-140
       const randomShape = Math.random();
 
       return {
