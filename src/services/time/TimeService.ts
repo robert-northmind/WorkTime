@@ -36,6 +36,21 @@ export const formatHours = (minutes: number): string => {
   const absMinutes = Math.abs(minutes);
   const hours = Math.floor(absMinutes / 60);
   const mins = Math.floor(absMinutes % 60);
-  
+
   return `${isNegative ? '-' : ''}${hours}:${mins.toString().padStart(2, '0')}`;
+};
+
+/**
+ * Checks if a date string (YYYY-MM-DD) represents today.
+ * Accepts an optional reference date for testing purposes.
+ */
+export const isToday = (dateString: string, referenceDate: Date = new Date()): boolean => {
+  if (!dateString || typeof dateString !== 'string') return false;
+
+  const year = referenceDate.getFullYear();
+  const month = String(referenceDate.getMonth() + 1).padStart(2, '0');
+  const day = String(referenceDate.getDate()).padStart(2, '0');
+  const todayString = `${year}-${month}-${day}`;
+
+  return dateString === todayString;
 };

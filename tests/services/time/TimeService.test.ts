@@ -1,8 +1,9 @@
-import { 
-  timeToMinutes, 
-  minutesToTime, 
-  calculateDuration, 
-  formatHours 
+import {
+  timeToMinutes,
+  minutesToTime,
+  calculateDuration,
+  formatHours,
+  isToday
 } from '../../../src/services/time/TimeService';
 
 describe('TimeService', () => {
@@ -55,6 +56,36 @@ describe('TimeService', () => {
     it('handles negative values', () => {
       expect(formatHours(-45)).toBe('-0:45');
       expect(formatHours(-90)).toBe('-1:30');
+    });
+  });
+
+  describe('isToday', () => {
+    it('returns true when date matches reference date', () => {
+      const referenceDate = new Date('2024-06-15T10:30:00');
+      expect(isToday('2024-06-15', referenceDate)).toBe(true);
+    });
+
+    it('returns false when date does not match reference date', () => {
+      const referenceDate = new Date('2024-06-15T10:30:00');
+      expect(isToday('2024-06-14', referenceDate)).toBe(false);
+      expect(isToday('2024-06-16', referenceDate)).toBe(false);
+      expect(isToday('2023-06-15', referenceDate)).toBe(false);
+    });
+
+    it('handles empty or invalid date strings', () => {
+      const referenceDate = new Date('2024-06-15T10:30:00');
+      expect(isToday('', referenceDate)).toBe(false);
+      expect(isToday('invalid', referenceDate)).toBe(false);
+    });
+
+    it('uses current date when no reference date provided', () => {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const todayString = `${year}-${month}-${day}`;
+
+      expect(isToday(todayString)).toBe(true);
     });
   });
 });

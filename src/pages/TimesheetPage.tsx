@@ -2,8 +2,13 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser } from "../services/auth/AuthService";
 import { getEntries, getUser } from "../services/firestore/FirestoreService";
-import { calculateDailyBalance } from "../services/balance/BalanceService";
-import { formatHours } from "../services/time/TimeService";
+import {
+  calculateDailyBalance,
+  shouldExcludeFromBalance,
+  isIncompleteEntry,
+  calculateInProgressMinutes,
+} from "../services/balance/BalanceService";
+import { formatHours, isToday } from "../services/time/TimeService";
 import { formatTimeDisplay } from "../services/time/TimeFormatService";
 import {
   getWeekNumber,
@@ -215,16 +220,6 @@ export const TimesheetPage: React.FC = () => {
       })
     : groupedByWeek;
 
-  // Helper to check if a date string is today
-  const isToday = (dateStr: string) => {
-    const today = new Date();
-    const date = new Date(dateStr + "T00:00:00");
-    return (
-      date.getDate() === today.getDate() &&
-      date.getMonth() === today.getMonth() &&
-      date.getFullYear() === today.getFullYear()
-    );
-  };
 
   const scrollToToday = () => {
     const todayStr = new Date().toISOString().split("T")[0];
@@ -411,12 +406,16 @@ export const TimesheetPage: React.FC = () => {
               </div>
             ) : (
               filteredWeeks.map((week) => {
-                // Calculate weekly totals
+                // Calculate weekly totals (excluding incomplete today entries)
                 let weeklyBalanceMinutes = 0;
                 let weeklyWorkedMinutes = 0;
 
                 week.entries.forEach((item) => {
                   if (item.entry) {
+                    // Skip incomplete entries for today in balance calculation
+                    if (shouldExcludeFromBalance(item.entry)) {
+                      return;
+                    }
                     const result = calculateDailyBalance(item.entry, schedules);
                     weeklyBalanceMinutes += result.balanceMinutes;
                     if (item.entry.status === "work") {
@@ -680,6 +679,10 @@ export const TimesheetPage: React.FC = () => {
 
                           // Regular entry with data
                           const entry = item.entry;
+                          const isEntryIncomplete = isIncompleteEntry(entry);
+                          const isTodayIncomplete = isTodayEntry && isEntryIncomplete;
+                          const isPastIncomplete = !isTodayEntry && isEntryIncomplete;
+
                           const balanceResult = calculateDailyBalance(
                             entry,
                             schedules
@@ -689,6 +692,12 @@ export const TimesheetPage: React.FC = () => {
                           );
                           const isPositive = balanceResult.balanceMinutes > 0;
                           const isZero = balanceResult.balanceMinutes === 0;
+
+                          // Calculate in-progress time for today's incomplete entry
+                          const inProgressMinutes = isTodayIncomplete
+                            ? calculateInProgressMinutes(entry)
+                            : 0;
+                          const inProgressStr = formatHours(inProgressMinutes);
 
                           return (
                             <tr
@@ -778,18 +787,34 @@ export const TimesheetPage: React.FC = () => {
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm">
                                 {entry.status === "work" ? (
-                                  <span
-                                    className={`${
-                                      isPositive
-                                        ? "text-green-600"
-                                        : isZero
-                                        ? "text-gray-400"
-                                        : "text-red-600"
-                                    } font-medium`}
-                                  >
-                                    {isPositive ? "+" : ""}
-                                    {balanceStr}
-                                  </span>
+                                  isTodayIncomplete ? (
+                                    <span className="inline-flex items-center gap-1 text-blue-600 font-medium">
+                                      <svg className="w-3 h-3 animate-pulse" fill="currentColor" viewBox="0 0 8 8">
+                                        <circle cx="4" cy="4" r="3" />
+                                      </svg>
+                                      {inProgressStr}
+                                    </span>
+                                  ) : isPastIncomplete ? (
+                                    <span className="inline-flex items-center gap-1 text-amber-600 font-medium" title="Missing end time">
+                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                      </svg>
+                                      {balanceStr}
+                                    </span>
+                                  ) : (
+                                    <span
+                                      className={`${
+                                        isPositive
+                                          ? "text-green-600"
+                                          : isZero
+                                          ? "text-gray-400"
+                                          : "text-red-600"
+                                      } font-medium`}
+                                    >
+                                      {isPositive ? "+" : ""}
+                                      {balanceStr}
+                                    </span>
+                                  )
                                 ) : (
                                   <span className="text-gray-400">-</span>
                                 )}
@@ -845,12 +870,16 @@ export const TimesheetPage: React.FC = () => {
               </div>
             ) : (
               filteredWeeks.map((week) => {
-                // Calculate weekly totals
+                // Calculate weekly totals (excluding incomplete today entries)
                 let weeklyBalanceMinutes = 0;
                 let weeklyWorkedMinutes = 0;
 
                 week.entries.forEach((item) => {
                   if (item.entry) {
+                    // Skip incomplete entries for today in balance calculation
+                    if (shouldExcludeFromBalance(item.entry)) {
+                      return;
+                    }
                     const result = calculateDailyBalance(item.entry, schedules);
                     weeklyBalanceMinutes += result.balanceMinutes;
                     if (item.entry.status === "work") {
@@ -1029,6 +1058,10 @@ export const TimesheetPage: React.FC = () => {
                         }
 
                         const entry = item.entry;
+                        const isEntryIncomplete = isIncompleteEntry(entry);
+                        const isTodayIncomplete = isTodayEntry && isEntryIncomplete;
+                        const isPastIncomplete = !isTodayEntry && isEntryIncomplete;
+
                         const balanceResult = calculateDailyBalance(
                           entry,
                           schedules
@@ -1038,6 +1071,12 @@ export const TimesheetPage: React.FC = () => {
                         );
                         const isPositive = balanceResult.balanceMinutes > 0;
                         const isZero = balanceResult.balanceMinutes === 0;
+
+                        // Calculate in-progress time for today's incomplete entry
+                        const inProgressMinutes = isTodayIncomplete
+                          ? calculateInProgressMinutes(entry)
+                          : 0;
+                        const inProgressStr = formatHours(inProgressMinutes);
 
                         return (
                           <div
@@ -1071,18 +1110,34 @@ export const TimesheetPage: React.FC = () => {
                                 </span>
                               </div>
                               <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                                <div
-                                  className={`text-sm font-bold ${
-                                    isPositive
-                                      ? "text-emerald-600"
-                                      : isZero
-                                      ? "text-gray-400"
-                                      : "text-rose-600"
-                                  }`}
-                                >
-                                  {isPositive ? "+" : ""}
-                                  {balanceStr}
-                                </div>
+                                {isTodayIncomplete ? (
+                                  <div className="inline-flex items-center gap-1 text-sm font-bold text-blue-600">
+                                    <svg className="w-3 h-3 animate-pulse" fill="currentColor" viewBox="0 0 8 8">
+                                      <circle cx="4" cy="4" r="3" />
+                                    </svg>
+                                    {inProgressStr}
+                                  </div>
+                                ) : isPastIncomplete ? (
+                                  <div className="inline-flex items-center gap-1 text-sm font-bold text-amber-600" title="Missing end time">
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                    {balanceStr}
+                                  </div>
+                                ) : (
+                                  <div
+                                    className={`text-sm font-bold ${
+                                      isPositive
+                                        ? "text-emerald-600"
+                                        : isZero
+                                        ? "text-gray-400"
+                                        : "text-rose-600"
+                                    }`}
+                                  >
+                                    {isPositive ? "+" : ""}
+                                    {balanceStr}
+                                  </div>
+                                )}
                                 <span
                                   className={`px-2 py-0.5 text-xs font-semibold rounded-full whitespace-nowrap ${(() => {
                                     // Check if it's a custom type or has a custom color override

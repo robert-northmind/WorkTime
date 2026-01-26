@@ -1,4 +1,4 @@
-import { calculateDuration } from '../time/TimeService';
+import { calculateDuration, timeToMinutes, isToday } from '../time/TimeService';
 import { getExpectedDailyHours, type WorkSchedule } from '../schedule/ScheduleService';
 
 export interface DailyEntry {
@@ -60,4 +60,39 @@ export const calculateDailyBalance = (entry: DailyEntry, schedules: WorkSchedule
     expectedMinutes,
     balanceMinutes
   };
+};
+
+/**
+ * Checks if an entry is incomplete (work status with start time but no end time).
+ */
+export const isIncompleteEntry = (entry: DailyEntry): boolean => {
+  return entry.status === 'work' && !!entry.startTime && !entry.endTime;
+};
+
+/**
+ * Determines if an entry should be excluded from balance calculations.
+ * Returns true if: it's today AND the entry is incomplete.
+ */
+export const shouldExcludeFromBalance = (entry: DailyEntry, referenceDate: Date = new Date()): boolean => {
+  return isToday(entry.date, referenceDate) && isIncompleteEntry(entry);
+};
+
+/**
+ * Calculates "in progress" minutes for an incomplete entry.
+ * Returns time from start to now, minus lunch, plus extra hours.
+ * Returns 0 if entry is complete or has no start time.
+ */
+export const calculateInProgressMinutes = (entry: DailyEntry, referenceDate: Date = new Date()): number => {
+  if (!entry.startTime || entry.endTime) return 0;
+
+  const startMinutes = timeToMinutes(entry.startTime);
+  const nowMinutes = referenceDate.getHours() * 60 + referenceDate.getMinutes();
+
+  let inProgressMinutes = nowMinutes - startMinutes;
+  if (inProgressMinutes < 0) return 0;
+
+  inProgressMinutes -= entry.lunchMinutes || 0;
+  inProgressMinutes += (entry.extraHours || 0) * 60;
+
+  return Math.max(0, inProgressMinutes);
 };

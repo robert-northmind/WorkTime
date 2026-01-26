@@ -5,7 +5,10 @@ import {
   calculateVacationStats,
   type VacationSettings,
 } from "../services/vacation/VacationService";
-import { calculateDailyBalance } from "../services/balance/BalanceService";
+import {
+  calculateDailyBalance,
+  shouldExcludeFromBalance,
+} from "../services/balance/BalanceService";
 import { formatHours } from "../services/time/TimeService";
 
 export const StatsPage: React.FC = () => {
@@ -160,8 +163,12 @@ export const StatsPage: React.FC = () => {
 
       // --- 3. Yearly Balance & Average Weekly Hours ---
       // Calculate yearly balance by summing all entry balances
+      // (excluding incomplete entries for today)
       let totalBalanceMinutes = 0;
       entries.forEach((entry) => {
+        if (shouldExcludeFromBalance(entry)) {
+          return;
+        }
         const result = calculateDailyBalance(entry, schedules);
         totalBalanceMinutes += result.balanceMinutes;
       });
@@ -188,8 +195,11 @@ export const StatsPage: React.FC = () => {
         return `${d.getUTCFullYear()}-W${weekNo}`;
       };
 
-      // Calculate balance for each week
+      // Calculate balance for each week (excluding incomplete today entries)
       entries.forEach((entry) => {
+        if (shouldExcludeFromBalance(entry)) {
+          return;
+        }
         const weekKey = getWeekKey(entry.date);
         const result = calculateDailyBalance(entry, schedules);
 
@@ -228,6 +238,8 @@ export const StatsPage: React.FC = () => {
 
       entries.forEach((entry) => {
         if (entry.status !== "work") return;
+        // Exclude incomplete entries for today from day stats
+        if (shouldExcludeFromBalance(entry)) return;
 
         const date = new Date(entry.date + "T00:00:00");
         const day = date.getDay();

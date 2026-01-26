@@ -1,4 +1,10 @@
-import { calculateDailyBalance, DailyEntry } from '../../../src/services/balance/BalanceService';
+import {
+  calculateDailyBalance,
+  DailyEntry,
+  isIncompleteEntry,
+  shouldExcludeFromBalance,
+  calculateInProgressMinutes
+} from '../../../src/services/balance/BalanceService';
 import { WorkSchedule } from '../../../src/services/schedule/ScheduleService';
 
 describe('BalanceService', () => {
@@ -207,6 +213,174 @@ describe('BalanceService', () => {
       expect(balance.expectedMinutes).toBe(0);
       expect(balance.actualMinutes).toBe(60);
       expect(balance.balanceMinutes).toBe(60);
+    });
+  });
+
+  describe('isIncompleteEntry', () => {
+    it('returns true for work entry with start time but no end time', () => {
+      const entry: DailyEntry = {
+        ...baseEntry,
+        startTime: '09:00',
+        endTime: '',
+        status: 'work'
+      };
+      expect(isIncompleteEntry(entry)).toBe(true);
+    });
+
+    it('returns false for work entry with both start and end time', () => {
+      const entry: DailyEntry = {
+        ...baseEntry,
+        startTime: '09:00',
+        endTime: '17:00',
+        status: 'work'
+      };
+      expect(isIncompleteEntry(entry)).toBe(false);
+    });
+
+    it('returns false for non-work entries even without end time', () => {
+      const vacationEntry: DailyEntry = {
+        ...baseEntry,
+        startTime: '',
+        endTime: '',
+        status: 'vacation'
+      };
+      const sickEntry: DailyEntry = {
+        ...baseEntry,
+        startTime: '',
+        endTime: '',
+        status: 'sick'
+      };
+      expect(isIncompleteEntry(vacationEntry)).toBe(false);
+      expect(isIncompleteEntry(sickEntry)).toBe(false);
+    });
+
+    it('returns false for work entry with no start time', () => {
+      const entry: DailyEntry = {
+        ...baseEntry,
+        startTime: '',
+        endTime: '',
+        status: 'work'
+      };
+      expect(isIncompleteEntry(entry)).toBe(false);
+    });
+  });
+
+  describe('shouldExcludeFromBalance', () => {
+    it('returns true for incomplete entry on current day', () => {
+      const referenceDate = new Date('2024-06-15T14:00:00');
+      const entry: DailyEntry = {
+        ...baseEntry,
+        date: '2024-06-15',
+        startTime: '09:00',
+        endTime: '',
+        status: 'work'
+      };
+      expect(shouldExcludeFromBalance(entry, referenceDate)).toBe(true);
+    });
+
+    it('returns false for complete entry on current day', () => {
+      const referenceDate = new Date('2024-06-15T14:00:00');
+      const entry: DailyEntry = {
+        ...baseEntry,
+        date: '2024-06-15',
+        startTime: '09:00',
+        endTime: '17:00',
+        status: 'work'
+      };
+      expect(shouldExcludeFromBalance(entry, referenceDate)).toBe(false);
+    });
+
+    it('returns false for incomplete entry on past day', () => {
+      const referenceDate = new Date('2024-06-15T14:00:00');
+      const entry: DailyEntry = {
+        ...baseEntry,
+        date: '2024-06-14',
+        startTime: '09:00',
+        endTime: '',
+        status: 'work'
+      };
+      expect(shouldExcludeFromBalance(entry, referenceDate)).toBe(false);
+    });
+
+    it('returns false for non-work entry on current day', () => {
+      const referenceDate = new Date('2024-06-15T14:00:00');
+      const entry: DailyEntry = {
+        ...baseEntry,
+        date: '2024-06-15',
+        startTime: '',
+        endTime: '',
+        status: 'vacation'
+      };
+      expect(shouldExcludeFromBalance(entry, referenceDate)).toBe(false);
+    });
+  });
+
+  describe('calculateInProgressMinutes', () => {
+    it('calculates minutes from start time to reference time', () => {
+      const referenceDate = new Date('2024-06-15T14:30:00');
+      const entry: DailyEntry = {
+        ...baseEntry,
+        date: '2024-06-15',
+        startTime: '09:00',
+        endTime: '',
+        status: 'work',
+        lunchMinutes: 30
+      };
+      // 09:00 to 14:30 = 5.5 hours = 330 minutes
+      // Minus 30 min lunch = 300 minutes
+      expect(calculateInProgressMinutes(entry, referenceDate)).toBe(300);
+    });
+
+    it('returns 0 for entry with no start time', () => {
+      const referenceDate = new Date('2024-06-15T14:30:00');
+      const entry: DailyEntry = {
+        ...baseEntry,
+        date: '2024-06-15',
+        startTime: '',
+        endTime: '',
+        status: 'work'
+      };
+      expect(calculateInProgressMinutes(entry, referenceDate)).toBe(0);
+    });
+
+    it('returns 0 for complete entry (has end time)', () => {
+      const referenceDate = new Date('2024-06-15T14:30:00');
+      const entry: DailyEntry = {
+        ...baseEntry,
+        date: '2024-06-15',
+        startTime: '09:00',
+        endTime: '17:00',
+        status: 'work'
+      };
+      expect(calculateInProgressMinutes(entry, referenceDate)).toBe(0);
+    });
+
+    it('includes extra hours in calculation', () => {
+      const referenceDate = new Date('2024-06-15T14:30:00');
+      const entry: DailyEntry = {
+        ...baseEntry,
+        date: '2024-06-15',
+        startTime: '09:00',
+        endTime: '',
+        status: 'work',
+        lunchMinutes: 30,
+        extraHours: 1
+      };
+      // 09:00 to 14:30 = 330 minutes - 30 lunch + 60 extra = 360 minutes
+      expect(calculateInProgressMinutes(entry, referenceDate)).toBe(360);
+    });
+
+    it('returns 0 if reference time is before start time', () => {
+      const referenceDate = new Date('2024-06-15T08:00:00');
+      const entry: DailyEntry = {
+        ...baseEntry,
+        date: '2024-06-15',
+        startTime: '09:00',
+        endTime: '',
+        status: 'work',
+        lunchMinutes: 0
+      };
+      expect(calculateInProgressMinutes(entry, referenceDate)).toBe(0);
     });
   });
 });
