@@ -5,11 +5,13 @@ import {
   calculateVacationStats,
   type VacationSettings,
 } from "../services/vacation/VacationService";
+import { getActiveSchedule } from "../services/schedule/ScheduleService";
 import {
-  calculateDailyBalance,
-  shouldExcludeFromBalance,
-} from "../services/balance/BalanceService";
-import { formatHours } from "../services/time/TimeService";
+  calculateYearlyBalance,
+  calculateAverageWeeklyHours,
+  calculateDayOfWeekStats,
+  countSickDays,
+} from "../services/stats/StatsService";
 
 export const StatsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -97,12 +99,9 @@ export const StatsPage: React.FC = () => {
       }
 
       // Determine expected weekly hours for the selected year
-      // Find the schedule effective for the start of the selected year (or the latest one before it)
-      const sortedSchedules = [...schedules].sort((a, b) =>
-        b.effectiveDate.localeCompare(a.effectiveDate)
-      );
-      const activeSchedule = sortedSchedules.find(
-        (s) => s.effectiveDate <= `${selectedYear}-12-31`
+      const activeSchedule = getActiveSchedule(
+        `${selectedYear}-12-31`,
+        schedules,
       );
       const currentExpectedWeeklyHours = activeSchedule
         ? activeSchedule.weeklyHours
@@ -121,7 +120,7 @@ export const StatsPage: React.FC = () => {
       const vStats = calculateVacationStats(
         entries,
         vacationSettings,
-        referenceDate
+        referenceDate,
       );
 
       // Override allowance if specific year setting exists (handled in calculateVacationStats if updated,
@@ -156,121 +155,23 @@ export const StatsPage: React.FC = () => {
       });
 
       // --- 2b. Sick Days ---
-      const sickDaysCount = entries.filter(
-        (entry) => entry.status === "sick"
-      ).length;
-      setSickDays(sickDaysCount);
+      setSickDays(countSickDays(entries));
 
-      // --- 3. Yearly Balance & Average Weekly Hours ---
-      // Calculate yearly balance by summing all entry balances
-      // (excluding incomplete entries for today)
-      let totalBalanceMinutes = 0;
-      entries.forEach((entry) => {
-        if (shouldExcludeFromBalance(entry)) {
-          return;
-        }
-        const result = calculateDailyBalance(entry, schedules);
-        totalBalanceMinutes += result.balanceMinutes;
-      });
-
-      setYearlyBalance(formatHours(totalBalanceMinutes));
-      setYearlyBalanceMinutes(totalBalanceMinutes);
+      // --- 3. Yearly Balance ---
+      const yearlyBalanceResult = calculateYearlyBalance(entries, schedules);
+      setYearlyBalance(yearlyBalanceResult.balanceFormatted);
+      setYearlyBalanceMinutes(yearlyBalanceResult.balanceMinutes);
 
       // --- 4. Average Weekly Hours ---
-      // Group entries by week and calculate weekly balances
-      const weeklyBalances = new Map<string, number>();
-
-      // Helper to get ISO week number
-      const getWeekKey = (dateStr: string): string => {
-        const date = new Date(dateStr + "T00:00:00");
-        const d = new Date(
-          Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
-        );
-        const dayNum = d.getUTCDay() || 7;
-        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-        const weekNo = Math.ceil(
-          ((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7
-        );
-        return `${d.getUTCFullYear()}-W${weekNo}`;
-      };
-
-      // Calculate balance for each week (excluding incomplete today entries)
-      entries.forEach((entry) => {
-        if (shouldExcludeFromBalance(entry)) {
-          return;
-        }
-        const weekKey = getWeekKey(entry.date);
-        const result = calculateDailyBalance(entry, schedules);
-
-        if (!weeklyBalances.has(weekKey)) {
-          weeklyBalances.set(weekKey, 0);
-        }
-        weeklyBalances.set(
-          weekKey,
-          weeklyBalances.get(weekKey)! + result.balanceMinutes
-        );
-      });
-
-      // Calculate average weekly balance
-      const weekCount = weeklyBalances.size;
-      if (weekCount > 0) {
-        const totalWeeklyBalance = Array.from(weeklyBalances.values()).reduce(
-          (sum, balance) => sum + balance,
-          0
-        );
-        const avgWeeklyBalanceMinutes = totalWeeklyBalance / weekCount;
-
-        // Average weekly hours = expected hours + average weekly balance
-        // Note: This assumes expected hours is constant for the year, which is true for our model.
-        const expectedWeeklyMinutes = currentExpectedWeeklyHours * 60;
-        const avgWeeklyMinutes =
-          expectedWeeklyMinutes + avgWeeklyBalanceMinutes;
-
-        setAverageWeeklyHours(formatHours(avgWeeklyMinutes));
-      } else {
-        setAverageWeeklyHours(formatHours(currentExpectedWeeklyHours * 60));
-      }
+      const avgWeeklyResult = calculateAverageWeeklyHours(
+        entries,
+        schedules,
+        currentExpectedWeeklyHours,
+      );
+      setAverageWeeklyHours(avgWeeklyResult.avgFormatted);
 
       // --- 5. Day of Week Stats ---
-      const dayMap = new Map<number, number[]>();
-      const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-      entries.forEach((entry) => {
-        if (entry.status !== "work") return;
-        // Exclude incomplete entries for today from day stats
-        if (shouldExcludeFromBalance(entry)) return;
-
-        const date = new Date(entry.date + "T00:00:00");
-        const day = date.getDay();
-        const result = calculateDailyBalance(entry, schedules);
-
-        if (!dayMap.has(day)) {
-          dayMap.set(day, []);
-        }
-        dayMap.get(day)!.push(result.actualMinutes);
-      });
-
-      const dayStats = dayNames
-        .map((name, index) => {
-          const minutes = dayMap.get(index) || [];
-          const count = minutes.length;
-          const avgMinutes =
-            count > 0 ? minutes.reduce((a, b) => a + b, 0) / count : 0;
-          const minMinutes = count > 0 ? Math.min(...minutes) : 0;
-          const maxMinutes = count > 0 ? Math.max(...minutes) : 0;
-
-          return {
-            day: index,
-            name,
-            avgMinutes,
-            minMinutes,
-            maxMinutes,
-            avgHoursStr: formatHours(Math.round(avgMinutes)),
-            count,
-          };
-        })
-        .filter((s) => s.day >= 1 && s.day <= 5); // Focus on Mon-Fri
+      const dayStats = calculateDayOfWeekStats(entries, schedules);
 
       // Calculate percentages for bar heights (relative to global max)
       const globalMax = Math.max(...dayStats.map((s) => s.maxMinutes), 1);

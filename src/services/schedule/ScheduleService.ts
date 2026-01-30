@@ -5,17 +5,38 @@ export interface WorkSchedule {
 }
 
 /**
+ * Finds the active schedule for a given date.
+ * Returns the most recent schedule where effectiveDate <= date.
+ */
+export const getActiveSchedule = (
+  date: string,
+  schedules: WorkSchedule[],
+): WorkSchedule | undefined => {
+  if (schedules.length === 0) return undefined;
+
+  // Sort schedules by effectiveDate descending
+  const sortedSchedules = [...schedules].sort((a, b) =>
+    b.effectiveDate.localeCompare(a.effectiveDate),
+  );
+
+  return sortedSchedules.find((s) => s.effectiveDate <= date);
+};
+
+/**
  * Calculates the expected hours for a specific date based on the schedule history.
  * Does NOT account for holidays/vacations (that logic belongs in a higher layer).
  */
-export const getExpectedDailyHours = (date: string, schedules: WorkSchedule[]): number => {
+export const getExpectedDailyHours = (
+  date: string,
+  schedules: WorkSchedule[],
+): number => {
   // 1. Find the active schedule
   // Sort schedules by effectiveDate descending
-  const sortedSchedules = [...schedules].sort((a, b) => 
-    b.effectiveDate.localeCompare(a.effectiveDate)
+  const sortedSchedules = [...schedules].sort((a, b) =>
+    b.effectiveDate.localeCompare(a.effectiveDate),
   );
 
-  const activeSchedule = sortedSchedules.find(s => s.effectiveDate <= date);
+  const activeSchedule = sortedSchedules.find((s) => s.effectiveDate <= date);
 
   if (!activeSchedule) {
     return 0;
@@ -29,7 +50,7 @@ export const getExpectedDailyHours = (date: string, schedules: WorkSchedule[]): 
   // For now, let's use a simple helper or ensure the date string is parsed correctly.
   // Actually, `new Date('2023-06-05')` is UTC. `new Date('2023-06-05T00:00:00')` is local.
   // Let's use the T00:00:00 trick to be safe for "local" day of week.
-  
+
   const localDate = new Date(`${date}T00:00:00`);
   const localDay = localDate.getDay();
 

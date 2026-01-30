@@ -1,4 +1,7 @@
-import { fillWeekDays } from "../../../src/services/week/WeekService";
+import {
+  fillWeekDays,
+  getWeekKey,
+} from "../../../src/services/week/WeekService";
 import type { FirestoreDailyEntry } from "../../../src/types/firestore";
 
 // Helper to create a mock entry
@@ -222,6 +225,38 @@ describe("WeekService", () => {
         expect(result[0].date).toBe("2025-12-20");
         expect(result[0].entry?.status).toBe("holiday");
       });
+    });
+  });
+
+  describe("getWeekKey", () => {
+    it("should return correct ISO week key for a regular date", () => {
+      // January 29, 2026 is a Thursday in week 5
+      expect(getWeekKey("2026-01-29")).toBe("2026-W5");
+    });
+
+    it("should return correct week key for first week of year", () => {
+      // January 1, 2026 is a Thursday in week 1
+      expect(getWeekKey("2026-01-01")).toBe("2026-W1");
+    });
+
+    it("should handle week spanning year boundary (Dec to Jan)", () => {
+      // December 29, 2025 is a Monday in ISO week 1 of 2026
+      expect(getWeekKey("2025-12-29")).toBe("2026-W1");
+    });
+
+    it("should return correct week for last week of year", () => {
+      // December 28, 2025 is a Sunday in week 52 of 2025
+      expect(getWeekKey("2025-12-28")).toBe("2025-W52");
+    });
+
+    it("should handle mid-year dates correctly", () => {
+      // June 15, 2026 is a Monday in week 25
+      expect(getWeekKey("2026-06-15")).toBe("2026-W25");
+    });
+
+    it("should handle week 53 when it exists", () => {
+      // December 31, 2020 is a Thursday in week 53 of 2020
+      expect(getWeekKey("2020-12-31")).toBe("2020-W53");
     });
   });
 });

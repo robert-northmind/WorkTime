@@ -1,5 +1,23 @@
 import type { FirestoreDailyEntry } from "../../types/firestore";
 
+/**
+ * Converts a date string to an ISO week key (e.g., "2026-W5").
+ * Uses ISO 8601 week numbering where week 1 contains the first Thursday of the year.
+ */
+export const getWeekKey = (dateStr: string): string => {
+  const date = new Date(dateStr + "T00:00:00");
+  const d = new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
+  );
+  const dayNum = d.getUTCDay() || 7; // Convert Sunday (0) to 7
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum); // Set to nearest Thursday
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil(
+    ((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7,
+  );
+  return `${d.getUTCFullYear()}-W${weekNo}`;
+};
+
 export interface WeekDayEntry {
   date: string;
   entry: FirestoreDailyEntry | null;
@@ -18,7 +36,7 @@ export interface WeekDayEntry {
 export const fillWeekDays = (
   weekEntries: FirestoreDailyEntry[],
   weekKey: string,
-  today: Date = new Date()
+  today: Date = new Date(),
 ): WeekDayEntry[] => {
   if (weekEntries.length === 0) return [];
 
@@ -51,7 +69,7 @@ export const fillWeekDays = (
 
   // Get today's date string for comparison (avoids timezone issues)
   const todayStr = `${today.getFullYear()}-${String(
-    today.getMonth() + 1
+    today.getMonth() + 1,
   ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
   // Build days in ascending order first (Mon to Sun)
@@ -60,8 +78,8 @@ export const fillWeekDays = (
       Date.UTC(
         monday.getUTCFullYear(),
         monday.getUTCMonth(),
-        monday.getUTCDate() + i
-      )
+        monday.getUTCDate() + i,
+      ),
     );
     const dateStr = currentDay.toISOString().split("T")[0];
     const isWeekend = i >= 5; // Saturday (5) or Sunday (6)
