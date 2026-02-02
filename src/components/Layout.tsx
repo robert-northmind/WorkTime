@@ -16,7 +16,11 @@ export const Layout: React.FC = () => {
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-1 sm:gap-2">
-            <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+            <img
+              src="/worktime-icon.svg"
+              alt="WorkTime"
+              className="h-6 w-6 sm:h-7 sm:w-7"
+            />
             <h1 className="text-lg sm:text-xl font-bold text-gray-900">WorkTime</h1>
           </div>
           
