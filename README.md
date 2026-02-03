@@ -19,6 +19,8 @@ A personal, multi-user-capable work time-tracking web application built with Rea
 
 ## Getting Started
 
+**Node version**: This project targets Node.js 24.
+
 1.  **Clone the repository**:
     ```bash
     git clone <repository-url>
@@ -66,6 +68,11 @@ A personal, multi-user-capable work time-tracking web application built with Rea
 
 The app is deployed to Firebase Hosting at:
 **https://worktime-ac19a.web.app**
+
+### CI/CD (GitHub Actions)
+
+*   Pull requests from the same repo run checks (`npm run check`).
+*   Merges to `main` (pushes to `main`) run `npm run build` and deploy to Firebase Hosting.
 
 ### Deploying Changes
 
