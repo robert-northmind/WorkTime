@@ -107,6 +107,11 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialDat
     }
   };
 
+  const activeCustomPTO = customPTO.filter((pto) => !pto.archived);
+  const selectedCustomPTO = customPTO.find((pto) => pto.id === status);
+  const isKnownFixedStatus = ['work', 'vacation', 'holiday', 'sick'].includes(status);
+  const shouldShowUnknownStatusOption = !!status && !isKnownFixedStatus && !selectedCustomPTO;
+
   return (
     <>
       <SuccessConfetti trigger={showConfetti} buttonRef={saveButtonRef} onComplete={() => setShowConfetti(false)} />
@@ -136,9 +141,17 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialDat
             <option value="vacation">Vacation</option>
             <option value="holiday">Holiday</option>
             <option value="sick">Sick</option>
-            {customPTO.map(pto => (
+            {activeCustomPTO.map(pto => (
               <option key={pto.id} value={pto.id}>{pto.name}</option>
             ))}
+            {selectedCustomPTO?.archived && (
+              <option value={selectedCustomPTO.id}>
+                {selectedCustomPTO.name} (Archived)
+              </option>
+            )}
+            {shouldShowUnknownStatusOption && (
+              <option value={status}>{status} (Unavailable)</option>
+            )}
           </select>
         </div>
 

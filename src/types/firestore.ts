@@ -6,6 +6,7 @@ export interface CustomPTOType {
   id: string;
   name: string;
   color: string;
+  archived?: boolean;
 }
 
 export interface Milestone {

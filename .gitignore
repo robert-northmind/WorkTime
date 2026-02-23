@@ -30,3 +30,6 @@ dist-ssr
 
 # Internal documentation
 walkthrough.md
+
+# Codex local environment artifacts
+.codex/

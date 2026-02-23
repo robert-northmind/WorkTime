@@ -2,11 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { getCurrentUser } from '../services/auth/AuthService';
 import { 
   getUser, 
-  saveUser
+  saveUser,
+  getEntries,
+  batchSaveEntries
 } from '../services/firestore/FirestoreService';
 import type { CustomPTOType, Milestone } from '../types/firestore';
 import { sortMilestonesByDate } from '../services/milestone/MilestoneService';
 import { DeveloperZone } from '../components/DeveloperZone';
+import {
+  type PTOUsageData,
+  archiveCustomPTOType,
+  buildReassignOptions,
+  fetchPTOUsage,
+  getStatusLabel,
+  persistCustomPTOSettings,
+  reassignEntriesStatus,
+  removeCustomPTOType,
+  restoreCustomPTOType,
+} from '../services/pto/CustomPTOService';
 
 export const SettingsPage: React.FC = () => {
   const [currentYear] = useState(new Date().getFullYear());
@@ -47,6 +60,12 @@ export const SettingsPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [yearlyMessage, setYearlyMessage] = useState('');
   const [globalMessage, setGlobalMessage] = useState('');
+  const [checkingDeletePTOId, setCheckingDeletePTOId] = useState<string | null>(null);
+  const [deleteModalType, setDeleteModalType] = useState<CustomPTOType | null>(null);
+  const [deleteModalUsage, setDeleteModalUsage] = useState<PTOUsageData | null>(null);
+  const [deleteModalStep, setDeleteModalStep] = useState<'choice' | 'reassign'>('choice');
+  const [reassignTargetStatus, setReassignTargetStatus] = useState('');
+  const [deleteActionLoading, setDeleteActionLoading] = useState(false);
 
   const user = getCurrentUser();
 
@@ -252,6 +271,145 @@ export const SettingsPage: React.FC = () => {
       setSaving(false);
     }
   };
+
+  const closeDeleteModal = () => {
+    setDeleteModalType(null);
+    setDeleteModalUsage(null);
+    setDeleteModalStep('choice');
+    setReassignTargetStatus('');
+    setDeleteActionLoading(false);
+  };
+
+  const persistNextCustomPTO = async (nextCustomPTO: CustomPTOType[]) => {
+    if (!user) throw new Error('User not authenticated');
+
+    const fallbackSettings = {
+      schedules,
+      vacation: {
+        yearStartMonth: 1,
+        yearStartDay: 1,
+        allowanceDays: vacationSettings.allowanceDays,
+        yearlyAllowances: vacationSettings.yearlyAllowances
+      },
+      yearlyComments,
+      yearlyMilestones,
+      ptoColors,
+      timeFormat,
+    };
+
+    await persistCustomPTOSettings({
+      uid: user.uid,
+      currentEmail: user.email || '',
+      nextCustomPTO,
+      fallbackSettings,
+      getUserFn: getUser,
+      saveUserFn: saveUser,
+    });
+  };
+
+  const handleDeleteCustomType = async (pto: CustomPTOType) => {
+    if (!user) return;
+
+    setGlobalMessage('');
+    setYearlyMessage('');
+    setCheckingDeletePTOId(pto.id);
+
+    try {
+      const usage = await fetchPTOUsage(user.uid, pto.id, getEntries);
+
+      if (usage.affectedEntries.length === 0) {
+        const nextCustomPTO = removeCustomPTOType(customPTO, pto.id);
+        await persistNextCustomPTO(nextCustomPTO);
+        setCustomPTO(nextCustomPTO);
+        setGlobalMessage(`Deleted "${pto.name}".`);
+        setTimeout(() => setGlobalMessage(''), 3000);
+        return;
+      }
+
+      setDeleteModalType(pto);
+      setDeleteModalUsage(usage);
+      setDeleteModalStep('choice');
+      setReassignTargetStatus('');
+    } catch (error) {
+      console.error('Error checking PTO usage:', error);
+      setGlobalMessage('Error checking PTO usage.');
+      setTimeout(() => setGlobalMessage(''), 3000);
+    } finally {
+      setCheckingDeletePTOId(null);
+    }
+  };
+
+  const handleArchiveCustomType = async () => {
+    if (!deleteModalType) return;
+
+    setDeleteActionLoading(true);
+    try {
+      const nextCustomPTO = archiveCustomPTOType(customPTO, deleteModalType.id);
+      await persistNextCustomPTO(nextCustomPTO);
+      setCustomPTO(nextCustomPTO);
+      closeDeleteModal();
+      setGlobalMessage(`Archived "${deleteModalType.name}". Existing entries keep this type.`);
+      setTimeout(() => setGlobalMessage(''), 4000);
+    } catch (error) {
+      console.error('Error archiving custom PTO type:', error);
+      setGlobalMessage('Error archiving custom PTO type.');
+      setTimeout(() => setGlobalMessage(''), 3000);
+    } finally {
+      setDeleteActionLoading(false);
+    }
+  };
+
+  const handleRestoreCustomType = async (ptoId: string) => {
+    setCheckingDeletePTOId(ptoId);
+    try {
+      const nextCustomPTO = restoreCustomPTOType(customPTO, ptoId);
+      await persistNextCustomPTO(nextCustomPTO);
+      setCustomPTO(nextCustomPTO);
+      setGlobalMessage('Custom PTO type restored.');
+      setTimeout(() => setGlobalMessage(''), 3000);
+    } catch (error) {
+      console.error('Error restoring custom PTO type:', error);
+      setGlobalMessage('Error restoring custom PTO type.');
+      setTimeout(() => setGlobalMessage(''), 3000);
+    } finally {
+      setCheckingDeletePTOId(null);
+    }
+  };
+
+  const handleReassignAndDelete = async () => {
+    if (!user || !deleteModalType || !deleteModalUsage || !reassignTargetStatus) return;
+
+    setDeleteActionLoading(true);
+    try {
+      const updatedEntries = reassignEntriesStatus(
+        deleteModalUsage.affectedEntries,
+        reassignTargetStatus
+      );
+
+      if (updatedEntries.length > 0) {
+        await batchSaveEntries(user.uid, updatedEntries);
+      }
+
+      const nextCustomPTO = removeCustomPTOType(customPTO, deleteModalType.id);
+      await persistNextCustomPTO(nextCustomPTO);
+      setCustomPTO(nextCustomPTO);
+
+      const targetLabel = getStatusLabel(reassignTargetStatus, customPTO);
+      closeDeleteModal();
+      setGlobalMessage(
+        `Reassigned ${updatedEntries.length} entries to "${targetLabel}" and deleted "${deleteModalType.name}".`
+      );
+      setTimeout(() => setGlobalMessage(''), 5000);
+    } catch (error) {
+      console.error('Error reassigning and deleting custom PTO type:', error);
+      setGlobalMessage('Error reassigning entries and deleting type.');
+      setTimeout(() => setGlobalMessage(''), 3000);
+    } finally {
+      setDeleteActionLoading(false);
+    }
+  };
+
+  const reassignOptions = buildReassignOptions(customPTO, deleteModalType?.id);
 
   if (loading) return (
     <div className="max-w-2xl mx-auto">
@@ -611,7 +769,12 @@ export const SettingsPage: React.FC = () => {
             ) : (
               <div className="space-y-3">
                 {customPTO.map((pto, index) => (
-                  <div key={pto.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 bg-white/60 rounded-xl">
+                  <div
+                    key={pto.id}
+                    className={`flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 rounded-xl ${
+                      pto.archived ? 'bg-slate-100/70 border border-slate-200' : 'bg-white/60'
+                    }`}
+                  >
                     <input
                       type="text"
                       value={pto.name}
@@ -624,6 +787,11 @@ export const SettingsPage: React.FC = () => {
                       placeholder="Type Name"
                     />
                     <div className="flex items-center gap-3 w-full sm:w-auto">
+                      {pto.archived && (
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-slate-200 text-slate-700">
+                          Archived
+                        </span>
+                      )}
                       <div 
                         className="w-8 h-8 rounded-full border-2 border-white shadow-sm flex-shrink-0"
                         style={{ backgroundColor: pto.color }}
@@ -638,24 +806,43 @@ export const SettingsPage: React.FC = () => {
                         }}
                         className="h-9 w-14 p-0 block bg-white border border-gray-200 rounded-lg cursor-pointer flex-shrink-0"
                       />
+                      {pto.archived && (
+                        <button
+                          type="button"
+                          onClick={() => handleRestoreCustomType(pto.id)}
+                          disabled={checkingDeletePTOId === pto.id}
+                          className="inline-flex items-center px-3 py-2 border border-transparent rounded-xl text-xs font-semibold text-violet-700 bg-violet-100 hover:bg-violet-200 disabled:opacity-50 transition-colors"
+                          title="Restore Type"
+                        >
+                          Restore
+                        </button>
+                      )}
                       <button
                         type="button"
-                        onClick={() => {
-                          const newPTO = customPTO.filter(p => p.id !== pto.id);
-                          setCustomPTO(newPTO);
-                        }}
+                        onClick={() => handleDeleteCustomType(pto)}
+                        disabled={checkingDeletePTOId === pto.id}
                         className="inline-flex items-center p-2 border border-transparent rounded-xl shadow-sm text-white bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 ml-auto sm:ml-0 transition-all"
-                        title="Delete Type"
+                        title={pto.archived ? 'Delete Type Permanently' : 'Delete Type'}
                       >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
+                        {checkingDeletePTOId === pto.id ? (
+                          <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                          </svg>
+                        ) : (
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        )}
                       </button>
                     </div>
                   </div>
                 ))}
               </div>
             )}
+            <p className="mt-2 text-xs text-gray-500">
+              Archived custom PTO types stay on historical entries but are hidden from new entry selection.
+            </p>
           </div>
 
           <div className="relative flex flex-col-reverse sm:flex-row items-center justify-end gap-4 pt-2">
@@ -692,6 +879,124 @@ export const SettingsPage: React.FC = () => {
 
 
       </div>
+
+      {deleteModalType && deleteModalUsage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => {
+              if (!deleteActionLoading) closeDeleteModal();
+            }}
+          />
+          <div className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl p-6 space-y-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Delete "{deleteModalType.name}"</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  This type is used by {deleteModalUsage.affectedEntries.length} entries across {deleteModalUsage.yearlyCounts.length} year(s). Custom PTO types are global and affect all years.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeDeleteModal}
+                disabled={deleteActionLoading}
+                className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+              <h4 className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-2">Yearly Impact</h4>
+              <div className="max-h-40 overflow-y-auto space-y-1">
+                {deleteModalUsage.yearlyCounts.map((item) => (
+                  <div key={item.year} className="flex items-center justify-between text-sm text-slate-700">
+                    <span>{item.year}</span>
+                    <span className="font-semibold">{item.count} entries</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {deleteModalStep === 'choice' ? (
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={handleArchiveCustomType}
+                  disabled={deleteActionLoading}
+                  className="w-full inline-flex items-center justify-center py-2.5 px-4 rounded-xl text-sm font-semibold text-violet-700 bg-violet-100 hover:bg-violet-200 disabled:opacity-50 transition-colors"
+                >
+                  {deleteActionLoading ? 'Archiving...' : 'Archive'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeleteModalStep('reassign');
+                    setReassignTargetStatus('');
+                  }}
+                  disabled={deleteActionLoading}
+                  className="w-full inline-flex items-center justify-center py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 disabled:opacity-50 transition-all"
+                >
+                  Reassign + Delete
+                </button>
+                <button
+                  type="button"
+                  onClick={closeDeleteModal}
+                  disabled={deleteActionLoading}
+                  className="w-full inline-flex items-center justify-center py-2.5 px-4 rounded-xl text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                    Reassign all affected entries to
+                  </label>
+                  <select
+                    value={reassignTargetStatus}
+                    onChange={(e) => setReassignTargetStatus(e.target.value)}
+                    className="block w-full rounded-xl border-gray-200 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 border p-3 bg-white text-sm"
+                  >
+                    <option value="">Select a target status</option>
+                    {reassignOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {reassignOptions.length === 0 && (
+                  <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                    No valid reassignment targets available. Please create a PTO type first or archive instead.
+                  </p>
+                )}
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setDeleteModalStep('choice')}
+                    disabled={deleteActionLoading}
+                    className="flex-1 inline-flex items-center justify-center py-2.5 px-4 rounded-xl text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 transition-colors"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleReassignAndDelete}
+                    disabled={!reassignTargetStatus || deleteActionLoading}
+                    className="flex-1 inline-flex items-center justify-center py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 disabled:opacity-50 transition-all"
+                  >
+                    {deleteActionLoading ? 'Applying...' : 'Apply Reassignment + Delete'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Stress Test / Developer Zone */}
       {import.meta.env.DEV && (

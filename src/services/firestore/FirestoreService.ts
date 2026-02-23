@@ -215,25 +215,29 @@ export const batchSaveEntries = async (
 
   if (!db) throw new Error("Firestore not initialized");
   const firestore = db;
+  const MAX_BATCH_SIZE = 500;
 
   await withTrace(
     TRACER_NAME,
     "batchSaveEntries",
     { collection: ENTRIES_COLLECTION, count: String(entries.length) },
     async () => {
-      const batch = writeBatch(firestore);
+      for (let i = 0; i < entries.length; i += MAX_BATCH_SIZE) {
+        const batch = writeBatch(firestore);
+        const chunk = entries.slice(i, i + MAX_BATCH_SIZE);
 
-      entries.forEach((entry) => {
-        const entryId = `${uid}_${entry.date}`;
-        const docRef = doc(firestore, ENTRIES_COLLECTION, entryId);
-        batch.set(docRef, {
-          ...entry,
-          uid,
-          updatedAt: new Date().toISOString(),
+        chunk.forEach((entry) => {
+          const entryId = `${uid}_${entry.date}`;
+          const docRef = doc(firestore, ENTRIES_COLLECTION, entryId);
+          batch.set(docRef, {
+            ...entry,
+            uid,
+            updatedAt: new Date().toISOString(),
+          });
         });
-      });
 
-      await batch.commit();
+        await batch.commit();
+      }
     }
   );
 };
