@@ -13,6 +13,7 @@ export interface Milestone {
   id: string;
   name: string;
   date: string;              // YYYY-MM-DD
+  startDate?: string;        // YYYY-MM-DD (optional)
   type: 'period' | 'event';
 }
 

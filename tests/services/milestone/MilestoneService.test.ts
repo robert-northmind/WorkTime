@@ -224,6 +224,17 @@ describe('getNextMilestoneDisplay', () => {
     });
   });
 
+
+  it('prioritizes an active milestone with startDate over an earlier upcoming milestone', () => {
+    const milestones: Milestone[] = [
+      { id: '1', name: 'Upcoming Event', date: '2024-03-20', type: 'event' },
+      { id: '2', name: 'Current Quarter', startDate: '2024-03-01', date: '2024-03-31', type: 'period' },
+    ];
+    const result = getNextMilestoneDisplay(milestones, '2024-03-16');
+    expect(result?.milestone.id).toBe('2');
+    expect(result?.progress?.percentage).toBe(52);
+  });
+
   it('selects the nearest future milestone from unsorted input', () => {
     const milestones: Milestone[] = [
       { id: '2', name: 'Q2', date: '2024-06-30', type: 'period' },
@@ -238,5 +249,33 @@ describe('getNextMilestoneDisplay', () => {
       { id: '1', name: 'Q1', date: '2024-03-31', type: 'period' },
     ];
     expect(getNextMilestoneDisplay(milestones, '2024-04-15')).toBeNull();
+  });
+
+  it('includes progress when milestone has an active startDate', () => {
+    const milestones: Milestone[] = [
+      { id: '1', name: 'Q1', startDate: '2024-03-01', date: '2024-03-31', type: 'period' },
+    ];
+    const result = getNextMilestoneDisplay(milestones, '2024-03-16');
+    expect(result?.progress).toEqual({
+      percentage: 52,
+      elapsedDays: 16,
+      totalDays: 31,
+    });
+  });
+
+  it('does not include progress when milestone has no startDate', () => {
+    const milestones: Milestone[] = [
+      { id: '1', name: 'Q1', date: '2024-03-31', type: 'period' },
+    ];
+    const result = getNextMilestoneDisplay(milestones, '2024-03-16');
+    expect(result?.progress).toBeUndefined();
+  });
+
+  it('does not include progress when today is outside start and end date range', () => {
+    const milestones: Milestone[] = [
+      { id: '1', name: 'Q1', startDate: '2024-03-20', date: '2024-03-31', type: 'period' },
+    ];
+    const result = getNextMilestoneDisplay(milestones, '2024-03-16');
+    expect(result?.progress).toBeUndefined();
   });
 });
