@@ -2,13 +2,56 @@ export interface Milestone {
   id: string;
   name: string;
   date: string;              // YYYY-MM-DD
+  startDate?: string;        // YYYY-MM-DD (optional)
   type: 'period' | 'event';
+}
+
+export interface MilestoneProgress {
+  percentage: number;
+  elapsedDays: number;
+  totalDays: number;
 }
 
 export interface MilestoneDisplay {
   milestone: Milestone;
   weeksRemaining: number;
   text: string;
+  progress?: MilestoneProgress;
+}
+
+
+function isMilestoneActive(milestone: Milestone, todayStr: string): boolean {
+  if (!milestone.startDate) return false;
+
+  const start = new Date(milestone.startDate + 'T00:00:00');
+  const end = new Date(milestone.date + 'T00:00:00');
+  const today = new Date(todayStr + 'T00:00:00');
+
+  if (start > end) return false;
+  return today >= start && today <= end;
+}
+
+function calculateMilestoneProgress(milestone: Milestone, todayStr: string): MilestoneProgress | undefined {
+  if (!milestone.startDate) return undefined;
+
+  const start = new Date(milestone.startDate + 'T00:00:00');
+  const end = new Date(milestone.date + 'T00:00:00');
+  const today = new Date(todayStr + 'T00:00:00');
+
+  if (start > end || today < start || today > end) {
+    return undefined;
+  }
+
+  const dayMs = 1000 * 60 * 60 * 24;
+  const totalDays = Math.floor((end.getTime() - start.getTime()) / dayMs) + 1;
+  const elapsedDays = Math.floor((today.getTime() - start.getTime()) / dayMs) + 1;
+  const percentage = Math.min(100, Math.max(0, Math.round((elapsedDays / totalDays) * 100)));
+
+  return {
+    percentage,
+    elapsedDays,
+    totalDays,
+  };
 }
 
 /**
@@ -114,16 +157,21 @@ export function getNextMilestoneDisplay(
   milestones: Milestone[],
   todayStr: string
 ): MilestoneDisplay | null {
-  const nextMilestone = findNextMilestone(milestones, todayStr);
+  const activeMilestones = sortMilestonesByDate(
+    milestones.filter(milestone => isMilestoneActive(milestone, todayStr))
+  );
 
-  if (!nextMilestone) return null;
+  const milestoneToDisplay = activeMilestones[0] || findNextMilestone(milestones, todayStr);
 
-  const weeksRemaining = calculateWeeksUntil(todayStr, nextMilestone.date);
-  const text = formatMilestoneText(nextMilestone, weeksRemaining);
+  if (!milestoneToDisplay) return null;
+
+  const weeksRemaining = calculateWeeksUntil(todayStr, milestoneToDisplay.date);
+  const text = formatMilestoneText(milestoneToDisplay, weeksRemaining);
 
   return {
-    milestone: nextMilestone,
+    milestone: milestoneToDisplay,
     weeksRemaining,
     text,
+    progress: calculateMilestoneProgress(milestoneToDisplay, todayStr),
   };
 }

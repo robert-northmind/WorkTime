@@ -8,6 +8,12 @@ import {
 } from '../services/firestore/FirestoreService';
 import type { CustomPTOType, Milestone } from '../types/firestore';
 import { sortMilestonesByDate } from '../services/milestone/MilestoneService';
+import {
+  createMilestoneFromDraft,
+  removeMilestoneFromList,
+  toEditableMilestone,
+  updateMilestoneInList,
+} from '../services/milestone/MilestoneSettingsService';
 import { DeveloperZone } from '../components/DeveloperZone';
 import {
   type PTOUsageData,
@@ -54,7 +60,8 @@ export const SettingsPage: React.FC = () => {
   const [yearComment, setYearComment] = useState('');
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [showAddMilestone, setShowAddMilestone] = useState(false);
-  const [newMilestone, setNewMilestone] = useState<Omit<Milestone, 'id'>>({ name: '', date: '', type: 'period' });
+  const [newMilestone, setNewMilestone] = useState<Omit<Milestone, 'id'>>({ name: '', date: '', startDate: '', type: 'period' });
+  const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -147,7 +154,38 @@ export const SettingsPage: React.FC = () => {
     const yearMilestones = yearlyMilestones[year.toString()] || [];
     setMilestones(sortMilestonesByDate(yearMilestones));
     setShowAddMilestone(false);
-    setNewMilestone({ name: '', date: `${year}-12-31`, type: 'period' });
+    setNewMilestone({ name: '', date: `${year}-12-31`, startDate: '', type: 'period' });
+  };
+
+  const handleAddMilestone = () => {
+    if (!newMilestone.name.trim() || !newMilestone.date) return;
+
+    const id = Date.now().toString();
+    setMilestones([...milestones, createMilestoneFromDraft(newMilestone, id)]);
+    setShowAddMilestone(false);
+    setNewMilestone({ name: '', date: `${selectedYear}-12-31`, startDate: '', type: 'period' });
+  };
+
+  const openEditMilestone = (milestone: Milestone) => {
+    setEditingMilestone(toEditableMilestone(milestone));
+  };
+
+  const closeEditMilestone = () => {
+    setEditingMilestone(null);
+  };
+
+  const handleUpdateMilestone = () => {
+    if (!editingMilestone || !editingMilestone.name.trim() || !editingMilestone.date) return;
+
+    setMilestones(updateMilestoneInList(milestones, editingMilestone));
+    closeEditMilestone();
+  };
+
+  const handleDeleteMilestone = (milestoneId: string) => {
+    setMilestones(removeMilestoneFromList(milestones, milestoneId));
+    if (editingMilestone?.id === milestoneId) {
+      closeEditMilestone();
+    }
   };
 
   const handleSaveYearly = async () => {
@@ -516,7 +554,7 @@ export const SettingsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    setNewMilestone({ name: '', date: `${selectedYear}-12-31`, type: 'period' });
+                    setNewMilestone({ name: '', date: `${selectedYear}-12-31`, startDate: '', type: 'period' });
                     setShowAddMilestone(true);
                   }}
                   className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-semibold rounded-lg text-cyan-700 bg-cyan-100 hover:bg-cyan-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 transition-colors"
@@ -551,8 +589,19 @@ export const SettingsPage: React.FC = () => {
                       <option value="event">Event</option>
                     </select>
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <div className="flex items-center gap-2 flex-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm text-cyan-700 whitespace-nowrap">
+                        Start date:
+                      </label>
+                      <input
+                        type="date"
+                        value={newMilestone.startDate || ''}
+                        onChange={(e) => setNewMilestone({ ...newMilestone, startDate: e.target.value })}
+                        className="flex-1 px-3 py-2 rounded-lg border-cyan-200 focus:ring-cyan-500 focus:border-cyan-500 text-sm border bg-white"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
                       <label className="text-sm text-cyan-700 whitespace-nowrap">
                         {newMilestone.type === 'period' ? 'End date:' : 'Date:'}
                       </label>
@@ -563,7 +612,8 @@ export const SettingsPage: React.FC = () => {
                         className="flex-1 px-3 py-2 rounded-lg border-cyan-200 focus:ring-cyan-500 focus:border-cyan-500 text-sm border bg-white"
                       />
                     </div>
-                    <div className="flex gap-2 justify-end">
+                  </div>
+                  <div className="flex gap-2 justify-end">
                       <button
                         type="button"
                         onClick={() => setShowAddMilestone(false)}
@@ -573,21 +623,13 @@ export const SettingsPage: React.FC = () => {
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
-                          if (newMilestone.name.trim() && newMilestone.date) {
-                            const id = Date.now().toString();
-                            setMilestones([...milestones, { ...newMilestone, id, name: newMilestone.name.trim() }]);
-                            setShowAddMilestone(false);
-                            setNewMilestone({ name: '', date: `${selectedYear}-12-31`, type: 'period' });
-                          }
-                        }}
+                        onClick={handleAddMilestone}
                         disabled={!newMilestone.name.trim() || !newMilestone.date}
                         className="px-4 py-2 text-sm font-semibold text-white bg-cyan-600 hover:bg-cyan-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         Add
                       </button>
                     </div>
-                  </div>
                 </div>
               </div>
             )}
@@ -603,7 +645,16 @@ export const SettingsPage: React.FC = () => {
                 {sortMilestonesByDate(milestones).map((milestone) => (
                   <div
                     key={milestone.id}
-                    className="group flex items-center gap-2 px-3 py-2 bg-white/80 border border-gray-200 rounded-lg hover:border-cyan-300 hover:bg-cyan-50/50 transition-colors"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openEditMilestone(milestone)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        openEditMilestone(milestone);
+                      }
+                    }}
+                    className="group flex items-center gap-2 px-3 py-2 bg-white/80 border border-gray-200 rounded-lg hover:border-cyan-300 hover:bg-cyan-50/50 transition-colors cursor-pointer"
                   >
                     <div className="flex flex-col">
                       <span className="text-sm font-medium text-gray-800">{milestone.name}</span>
@@ -615,12 +666,21 @@ export const SettingsPage: React.FC = () => {
                         }`}>
                           {milestone.type === 'period' ? 'Period' : 'Event'}
                         </span>
+                        {milestone.startDate && (
+                          <span>
+                            {new Date(milestone.startDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            {' - '}
+                          </span>
+                        )}
                         <span>{new Date(milestone.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                       </div>
                     </div>
                     <button
                       type="button"
-                      onClick={() => setMilestones(milestones.filter(m => m.id !== milestone.id))}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteMilestone(milestone.id);
+                      }}
                       className="ml-1 p-1 text-gray-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
                       title="Delete milestone"
                     >
@@ -633,6 +693,91 @@ export const SettingsPage: React.FC = () => {
               </div>
             )}
           </div>
+
+          {editingMilestone && (
+            <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
+              <div className="w-full max-w-md rounded-xl bg-white shadow-xl border border-gray-100 p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h5 className="text-base font-semibold text-gray-900">Edit Milestone</h5>
+                  <button
+                    type="button"
+                    onClick={closeEditMilestone}
+                    className="text-gray-400 hover:text-gray-600"
+                    aria-label="Close milestone edit modal"
+                  >
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    value={editingMilestone.name}
+                    onChange={(e) => setEditingMilestone({ ...editingMilestone, name: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-cyan-500 focus:border-cyan-500 text-sm"
+                    placeholder="Milestone name"
+                  />
+                  <select
+                    value={editingMilestone.type}
+                    onChange={(e) => setEditingMilestone({ ...editingMilestone, type: e.target.value as 'period' | 'event' })}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-cyan-500 focus:border-cyan-500 text-sm bg-white"
+                  >
+                    <option value="period">Period</option>
+                    <option value="event">Event</option>
+                  </select>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Start date (optional)</label>
+                      <input
+                        type="date"
+                        value={editingMilestone.startDate || ''}
+                        onChange={(e) => setEditingMilestone({ ...editingMilestone, startDate: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-cyan-500 focus:border-cyan-500 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">{editingMilestone.type === 'period' ? 'End date' : 'Date'}</label>
+                      <input
+                        type="date"
+                        value={editingMilestone.date}
+                        onChange={(e) => setEditingMilestone({ ...editingMilestone, date: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-cyan-500 focus:border-cyan-500 text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2">
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteMilestone(editingMilestone.id)}
+                    className="text-sm font-medium text-rose-600 hover:text-rose-700"
+                  >
+                    Delete
+                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={closeEditMilestone}
+                      className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-800"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleUpdateMilestone}
+                      disabled={!editingMilestone.name.trim() || !editingMilestone.date}
+                      className="px-4 py-2 text-sm font-semibold text-white bg-cyan-600 hover:bg-cyan-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="relative flex flex-col-reverse sm:flex-row items-center justify-end gap-4 pt-2">
             {yearlyMessage && (
@@ -844,6 +989,91 @@ export const SettingsPage: React.FC = () => {
               Archived custom PTO types stay on historical entries but are hidden from new entry selection.
             </p>
           </div>
+
+          {editingMilestone && (
+            <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
+              <div className="w-full max-w-md rounded-xl bg-white shadow-xl border border-gray-100 p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h5 className="text-base font-semibold text-gray-900">Edit Milestone</h5>
+                  <button
+                    type="button"
+                    onClick={closeEditMilestone}
+                    className="text-gray-400 hover:text-gray-600"
+                    aria-label="Close milestone edit modal"
+                  >
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    value={editingMilestone.name}
+                    onChange={(e) => setEditingMilestone({ ...editingMilestone, name: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-cyan-500 focus:border-cyan-500 text-sm"
+                    placeholder="Milestone name"
+                  />
+                  <select
+                    value={editingMilestone.type}
+                    onChange={(e) => setEditingMilestone({ ...editingMilestone, type: e.target.value as 'period' | 'event' })}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-cyan-500 focus:border-cyan-500 text-sm bg-white"
+                  >
+                    <option value="period">Period</option>
+                    <option value="event">Event</option>
+                  </select>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Start date (optional)</label>
+                      <input
+                        type="date"
+                        value={editingMilestone.startDate || ''}
+                        onChange={(e) => setEditingMilestone({ ...editingMilestone, startDate: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-cyan-500 focus:border-cyan-500 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">{editingMilestone.type === 'period' ? 'End date' : 'Date'}</label>
+                      <input
+                        type="date"
+                        value={editingMilestone.date}
+                        onChange={(e) => setEditingMilestone({ ...editingMilestone, date: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-cyan-500 focus:border-cyan-500 text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2">
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteMilestone(editingMilestone.id)}
+                    className="text-sm font-medium text-rose-600 hover:text-rose-700"
+                  >
+                    Delete
+                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={closeEditMilestone}
+                      className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-800"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleUpdateMilestone}
+                      disabled={!editingMilestone.name.trim() || !editingMilestone.date}
+                      className="px-4 py-2 text-sm font-semibold text-white bg-cyan-600 hover:bg-cyan-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="relative flex flex-col-reverse sm:flex-row items-center justify-end gap-4 pt-2">
             {globalMessage && (

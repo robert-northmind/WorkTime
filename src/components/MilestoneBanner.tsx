@@ -35,6 +35,21 @@ export const MilestoneBanner: React.FC<MilestoneBannerProps> = ({ display }) => 
           </span>
         </div>
       </div>
+
+      {display.progress && (
+        <div className="mt-3">
+          <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+            <span>Progress</span>
+            <span>{display.progress.percentage}%</span>
+          </div>
+          <div className="h-2 bg-amber-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-amber-500 transition-all duration-300"
+              style={{ width: `${display.progress.percentage}%` }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
