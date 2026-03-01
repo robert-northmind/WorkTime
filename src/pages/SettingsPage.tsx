@@ -181,7 +181,17 @@ export const SettingsPage: React.FC = () => {
     closeEditMilestone();
   };
 
-  const handleDeleteMilestone = (milestoneId: string) => {
+  const handleDeleteMilestone = (milestoneId: string, milestoneName?: string) => {
+    const confirmed = window.confirm(
+      milestoneName
+        ? `Delete milestone "${milestoneName}"?`
+        : 'Delete this milestone?'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     setMilestones(removeMilestoneFromList(milestones, milestoneId));
     if (editingMilestone?.id === milestoneId) {
       closeEditMilestone();
@@ -679,9 +689,9 @@ export const SettingsPage: React.FC = () => {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDeleteMilestone(milestone.id);
+                        handleDeleteMilestone(milestone.id, milestone.name);
                       }}
-                      className="ml-1 p-1 text-gray-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
+                      className="hidden sm:inline-flex ml-1 p-1 text-gray-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
                       title="Delete milestone"
                     >
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -752,7 +762,7 @@ export const SettingsPage: React.FC = () => {
                 <div className="flex items-center justify-between pt-2">
                   <button
                     type="button"
-                    onClick={() => handleDeleteMilestone(editingMilestone.id)}
+                    onClick={() => handleDeleteMilestone(editingMilestone.id, editingMilestone.name)}
                     className="text-sm font-medium text-rose-600 hover:text-rose-700"
                   >
                     Delete
