@@ -857,7 +857,7 @@ export const SettingsPage: React.FC = () => {
                         type="date"
                         value={editingMilestone.startDate || ''}
                         onChange={(e) => setEditingMilestone({ ...editingMilestone, startDate: e.target.value })}
-                        className="w-full min-w-0 px-3 py-2 rounded-lg border border-gray-200 text-base sm:text-sm focus:border-cyan-500 focus:ring-cyan-500"
+                        className="block w-full min-w-0 max-w-full [min-inline-size:0] px-3 py-2 rounded-lg border border-gray-200 text-base sm:text-sm focus:border-cyan-500 focus:ring-cyan-500"
                       />
                     </div>
                     <div className="min-w-0">
@@ -866,7 +866,7 @@ export const SettingsPage: React.FC = () => {
                         type="date"
                         value={editingMilestone.date}
                         onChange={(e) => setEditingMilestone({ ...editingMilestone, date: e.target.value })}
-                        className="w-full min-w-0 px-3 py-2 rounded-lg border border-gray-200 text-base sm:text-sm focus:border-cyan-500 focus:ring-cyan-500"
+                        className="block w-full min-w-0 max-w-full [min-inline-size:0] px-3 py-2 rounded-lg border border-gray-200 text-base sm:text-sm focus:border-cyan-500 focus:ring-cyan-500"
                       />
                     </div>
                   </div>
