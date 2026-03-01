@@ -20,4 +20,12 @@ describe('SettingsPage milestone editor modal', () => {
     expect(source).toContain('Delete milestone?');
     expect(source).toContain('confirmDeleteMilestone');
   });
+
+  it('keeps card delete button tappable on touch devices', () => {
+    const settingsPagePath = path.resolve(process.cwd(), 'src/pages/SettingsPage.tsx');
+    const source = fs.readFileSync(settingsPagePath, 'utf8');
+
+    expect(source).not.toContain('pointer-events-none');
+    expect(source).toContain('opacity-70');
+  });
 });

@@ -697,7 +697,7 @@ export const SettingsPage: React.FC = () => {
                         e.stopPropagation();
                         requestDeleteMilestone(milestone);
                       }}
-                      className="ml-1 shrink-0 p-1 text-gray-400 opacity-0 pointer-events-none transition-all hover:text-rose-500 group-hover:opacity-100 group-hover:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto"
+                      className="ml-1 shrink-0 rounded p-1 text-gray-400 opacity-70 transition hover:text-rose-500 hover:opacity-100 focus-visible:opacity-100"
                       title="Delete milestone"
                     >
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
