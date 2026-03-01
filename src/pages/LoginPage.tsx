@@ -50,7 +50,7 @@ export const LoginPage: React.FC = () => {
             {agentTestAuth.enabled && (
               <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded text-sm">
                 <p className="font-medium">Agent test login is enabled for this environment.</p>
-                <p className="mt-1 break-all">Use <strong>{agentTestAuth.email}</strong> / <strong>{agentTestAuth.password}</strong>.</p>
+                <p className="mt-1 break-all">Use <strong>{agentTestAuth.email}</strong> with the Fill test credentials helper below.</p>
                 <button
                   type="button"
                   onClick={() => {

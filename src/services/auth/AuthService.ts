@@ -7,9 +7,10 @@ import {
 } from 'firebase/auth';
 import { auth, USE_MOCK } from '../firebase/config';
 
-const AGENT_TEST_AUTH_ENABLED = import.meta.env.VITE_AGENT_TEST_AUTH_ENABLED === 'true';
+const AGENT_TEST_AUTH_ENABLED =
+  import.meta.env.DEV && import.meta.env.VITE_AGENT_TEST_AUTH_ENABLED === 'true';
 const AGENT_TEST_EMAIL = import.meta.env.VITE_AGENT_TEST_EMAIL || 'agent-test@example.com';
-const AGENT_TEST_PASSWORD = import.meta.env.VITE_AGENT_TEST_PASSWORD || 'agent-test-password';
+const AGENT_TEST_PASSWORD = import.meta.env.VITE_AGENT_TEST_PASSWORD || '';
 const MOCK_AUTH_STORAGE_KEY = 'mock_auth_user';
 
 // Mock user for demo mode
@@ -72,6 +73,8 @@ let mockAuthType: MockAuthType | null = getStoredMockAuthType();
 let mockUser: User | null = getUserByMockAuthType(mockAuthType);
 const mockListeners: ((user: User | null) => void)[] = [];
 
+const isAgentSessionActive = (): boolean => AGENT_TEST_AUTH_ENABLED && mockAuthType === 'agent';
+
 const notifyMockListeners = () => {
   mockListeners.forEach(listener => listener(mockUser));
 };
@@ -132,7 +135,7 @@ export const signup = async (email: string, password: string): Promise<void> => 
 };
 
 export const logout = async (): Promise<void> => {
-  const wasAgentSession = mockAuthType === 'agent';
+  const wasAgentSession = isAgentSessionActive();
 
   if (mockAuthType) {
     clearMockSession();
@@ -148,7 +151,7 @@ export const logout = async (): Promise<void> => {
 };
 
 export const subscribeToAuthChanges = (callback: (user: User | null) => void): () => void => {
-  if (USE_MOCK || mockAuthType === 'agent') {
+  if (USE_MOCK || isAgentSessionActive()) {
     mockListeners.push(callback);
     // Immediate callback
     callback(mockUser);
@@ -169,7 +172,7 @@ export const getCurrentUser = (): User | null => {
   if (USE_MOCK) {
     return mockUser;
   }
-  if (mockAuthType === 'agent') {
+  if (isAgentSessionActive()) {
     return mockUser;
   }
   return auth?.currentUser || null;

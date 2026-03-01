@@ -110,6 +110,12 @@ npm run dev
 
 When `VITE_AGENT_TEST_AUTH_ENABLED` is not set to `true`, the app uses normal Firebase auth behavior.
 
+> **Security warning**
+>
+> Agent test login mode is **only** for local development and must **never** be enabled in production.  
+> All `VITE_*` environment variables are embedded in the client bundle, so the test password is **not secret** and must not be treated as a secure credential.
+
+
 ### UI verification expectations
 
 When making UI changes, always verify both:

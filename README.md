@@ -76,6 +76,11 @@ You can enable a special login path that accepts a hard-coded test user while st
 
 When this mode is disabled (or unset), authentication works normally via Firebase only.
 
+> **Security warning**
+>
+> Agent test login mode is **only** for local development and must **never** be enabled in production.
+> All `VITE_*` environment variables are embedded in the client bundle, so the test password is **not secret** and must not be treated as a secure credential.
+
 5.  **Build for production**:
     ```bash
     npm run build
