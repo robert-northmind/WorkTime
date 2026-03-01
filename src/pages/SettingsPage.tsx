@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getCurrentUser } from '../services/auth/AuthService';
 import { 
   getUser, 
@@ -62,6 +62,8 @@ export const SettingsPage: React.FC = () => {
   const [showAddMilestone, setShowAddMilestone] = useState(false);
   const [newMilestone, setNewMilestone] = useState<Omit<Milestone, 'id'>>({ name: '', date: '', startDate: '', type: 'period' });
   const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null);
+  const [pendingDeleteMilestone, setPendingDeleteMilestone] = useState<Milestone | null>(null);
+  const deleteMilestoneDialogRef = useRef<HTMLDivElement | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -187,6 +189,87 @@ export const SettingsPage: React.FC = () => {
       closeEditMilestone();
     }
   };
+
+  const requestDeleteMilestone = (milestone: Milestone) => {
+    setPendingDeleteMilestone(milestone);
+  };
+
+  const cancelDeleteMilestone = () => {
+    setPendingDeleteMilestone(null);
+  };
+
+  const confirmDeleteMilestone = () => {
+    if (!pendingDeleteMilestone) return;
+
+    handleDeleteMilestone(pendingDeleteMilestone.id);
+    setPendingDeleteMilestone(null);
+  };
+
+  useEffect(() => {
+    if (!pendingDeleteMilestone) return;
+
+    const dialog = deleteMilestoneDialogRef.current;
+    const previousActive = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    const focusableSelector = [
+      'button:not([disabled])',
+      '[href]',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+      '[tabindex]:not([tabindex="-1"])',
+    ].join(',');
+
+    const getFocusableElements = () =>
+      dialog
+        ? Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector)).filter(
+            (element) => !element.hasAttribute('disabled') && element.tabIndex !== -1,
+          )
+        : [];
+
+    const focusableElements = getFocusableElements();
+    if (focusableElements.length > 0) {
+      focusableElements[0].focus();
+    } else {
+      dialog?.focus();
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        cancelDeleteMilestone();
+        return;
+      }
+
+      if (event.key !== 'Tab') return;
+
+      const currentFocusableElements = getFocusableElements();
+      if (currentFocusableElements.length === 0) {
+        event.preventDefault();
+        dialog?.focus();
+        return;
+      }
+
+      const firstElement = currentFocusableElements[0];
+      const lastElement = currentFocusableElements[currentFocusableElements.length - 1];
+      const activeElement = document.activeElement;
+
+      if (event.shiftKey && activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      previousActive?.focus();
+    };
+  }, [pendingDeleteMilestone]);
 
   const handleSaveYearly = async () => {
     if (!user) return;
@@ -679,9 +762,9 @@ export const SettingsPage: React.FC = () => {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDeleteMilestone(milestone.id);
+                        requestDeleteMilestone(milestone);
                       }}
-                      className="ml-1 shrink-0 p-1 text-gray-400 opacity-0 transition-all hover:text-rose-500 group-hover:opacity-100"
+                      className="ml-1 shrink-0 rounded p-1 text-gray-400 opacity-70 transition hover:text-rose-500 hover:opacity-100 focus-visible:opacity-100"
                       title="Delete milestone"
                     >
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -693,6 +776,46 @@ export const SettingsPage: React.FC = () => {
               </div>
             )}
           </div>
+
+
+          {pendingDeleteMilestone && (
+            <div
+              className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4"
+              onClick={cancelDeleteMilestone}
+            >
+              <div
+                ref={deleteMilestoneDialogRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="delete-milestone-title"
+                aria-describedby="delete-milestone-description"
+                tabIndex={-1}
+                className="w-full max-w-sm rounded-xl border border-gray-100 bg-white p-5 shadow-xl"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <h5 id="delete-milestone-title" className="text-base font-semibold text-gray-900">Delete milestone?</h5>
+                <p id="delete-milestone-description" className="mt-2 text-sm text-gray-600">
+                  "{pendingDeleteMilestone.name}" will be removed from {selectedYear}. This action can’t be undone.
+                </p>
+                <div className="mt-4 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={cancelDeleteMilestone}
+                    className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={confirmDeleteMilestone}
+                    className="rounded-lg bg-rose-600 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-700"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {editingMilestone && (
             <div className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-black/40 p-4 sm:items-center">
