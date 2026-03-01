@@ -839,13 +839,13 @@ export const SettingsPage: React.FC = () => {
                     type="text"
                     value={editingMilestone.name}
                     onChange={(e) => setEditingMilestone({ ...editingMilestone, name: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-cyan-500 focus:border-cyan-500 text-sm"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-cyan-500 focus:border-cyan-500 text-base sm:text-sm"
                     placeholder="Milestone name"
                   />
                   <select
                     value={editingMilestone.type}
                     onChange={(e) => setEditingMilestone({ ...editingMilestone, type: e.target.value as 'period' | 'event' })}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-cyan-500 focus:border-cyan-500 text-sm bg-white"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-cyan-500 focus:border-cyan-500 text-base sm:text-sm bg-white"
                   >
                     <option value="period">Period</option>
                     <option value="event">Event</option>
@@ -857,7 +857,7 @@ export const SettingsPage: React.FC = () => {
                         type="date"
                         value={editingMilestone.startDate || ''}
                         onChange={(e) => setEditingMilestone({ ...editingMilestone, startDate: e.target.value })}
-                        className="w-full min-w-0 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-cyan-500 focus:ring-cyan-500"
+                        className="w-full min-w-0 px-3 py-2 rounded-lg border border-gray-200 text-base sm:text-sm focus:border-cyan-500 focus:ring-cyan-500"
                       />
                     </div>
                     <div className="min-w-0">
@@ -866,7 +866,7 @@ export const SettingsPage: React.FC = () => {
                         type="date"
                         value={editingMilestone.date}
                         onChange={(e) => setEditingMilestone({ ...editingMilestone, date: e.target.value })}
-                        className="w-full min-w-0 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-cyan-500 focus:ring-cyan-500"
+                        className="w-full min-w-0 px-3 py-2 rounded-lg border border-gray-200 text-base sm:text-sm focus:border-cyan-500 focus:ring-cyan-500"
                       />
                     </div>
                   </div>
