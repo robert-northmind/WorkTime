@@ -7,6 +7,11 @@ import {
 } from 'firebase/auth';
 import { auth, USE_MOCK } from '../firebase/config';
 
+const AGENT_TEST_AUTH_ENABLED = import.meta.env.VITE_AGENT_TEST_AUTH_ENABLED === 'true';
+const AGENT_TEST_EMAIL = import.meta.env.VITE_AGENT_TEST_EMAIL || 'agent-test@example.com';
+const AGENT_TEST_PASSWORD = import.meta.env.VITE_AGENT_TEST_PASSWORD || 'agent-test-password';
+const MOCK_AUTH_STORAGE_KEY = 'mock_auth_user';
+
 // Mock user for demo mode
 const MOCK_USER: User = {
   uid: 'mock-user-123',
@@ -36,24 +41,71 @@ const MOCK_USER: User = {
   providerId: 'password',
 };
 
+const AGENT_TEST_USER: User = {
+  ...MOCK_USER,
+  uid: 'agent-test-user',
+  email: AGENT_TEST_EMAIL,
+  displayName: 'Agent Test User',
+};
+
+type MockAuthType = 'mock' | 'agent';
+
 // Simple event emitter for mock auth
-let mockUser: User | null = localStorage.getItem('mock_auth_user') ? MOCK_USER : null;
+const getStoredMockAuthType = (): MockAuthType | null => {
+  const authType = localStorage.getItem(MOCK_AUTH_STORAGE_KEY);
+  if (authType === 'agent' || authType === 'mock') return authType;
+  if (authType === 'true') return 'mock'; // legacy support
+  return null;
+};
+
+const getUserByMockAuthType = (mockAuthType: MockAuthType | null): User | null => {
+  if (mockAuthType === 'agent') return AGENT_TEST_USER;
+  if (mockAuthType === 'mock') return MOCK_USER;
+  return null;
+};
+
+let mockAuthType: MockAuthType | null = getStoredMockAuthType();
+let mockUser: User | null = getUserByMockAuthType(mockAuthType);
 const mockListeners: ((user: User | null) => void)[] = [];
 
 const notifyMockListeners = () => {
   mockListeners.forEach(listener => listener(mockUser));
 };
 
+const setMockSession = (type: MockAuthType): void => {
+  mockAuthType = type;
+  mockUser = getUserByMockAuthType(type);
+  localStorage.setItem(MOCK_AUTH_STORAGE_KEY, type);
+};
+
+const clearMockSession = (): void => {
+  mockAuthType = null;
+  mockUser = null;
+  localStorage.removeItem(MOCK_AUTH_STORAGE_KEY);
+};
+
 export const login = async (email: string, password: string): Promise<void> => {
+  if (
+    AGENT_TEST_AUTH_ENABLED &&
+    email === AGENT_TEST_EMAIL &&
+    password === AGENT_TEST_PASSWORD
+  ) {
+    await new Promise(resolve => setTimeout(resolve, 200));
+    setMockSession('agent');
+    notifyMockListeners();
+    return;
+  }
+
   if (USE_MOCK) {
     console.log('Mock Login with:', email, password);
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 500));
-    mockUser = MOCK_USER;
-    localStorage.setItem('mock_auth_user', 'true');
+    setMockSession('mock');
     notifyMockListeners();
     return;
   }
+
+  clearMockSession();
   
   if (!auth) throw new Error('Firebase Auth not initialized');
   await signInWithEmailAndPassword(auth, email, password);
@@ -64,21 +116,26 @@ export const signup = async (email: string, password: string): Promise<void> => 
     console.log('Mock Signup with:', email, password);
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 500));
-    mockUser = MOCK_USER;
-    localStorage.setItem('mock_auth_user', 'true');
+    setMockSession('mock');
     notifyMockListeners();
     return;
   }
+
+  clearMockSession();
   
   if (!auth) throw new Error('Firebase Auth not initialized');
   await createUserWithEmailAndPassword(auth, email, password);
 };
 
 export const logout = async (): Promise<void> => {
-  if (USE_MOCK) {
-    mockUser = null;
-    localStorage.removeItem('mock_auth_user');
+  const wasAgentSession = mockAuthType === 'agent';
+
+  if (mockAuthType) {
+    clearMockSession();
     notifyMockListeners();
+  }
+
+  if (USE_MOCK || wasAgentSession) {
     return;
   }
 
@@ -87,7 +144,7 @@ export const logout = async (): Promise<void> => {
 };
 
 export const subscribeToAuthChanges = (callback: (user: User | null) => void): () => void => {
-  if (USE_MOCK) {
+  if (USE_MOCK || mockAuthType === 'agent') {
     mockListeners.push(callback);
     // Immediate callback
     callback(mockUser);
@@ -108,5 +165,14 @@ export const getCurrentUser = (): User | null => {
   if (USE_MOCK) {
     return mockUser;
   }
+  if (mockAuthType === 'agent') {
+    return mockUser;
+  }
   return auth?.currentUser || null;
 };
+
+export const getAgentTestCredentials = (): { enabled: boolean; email: string; password: string } => ({
+  enabled: AGENT_TEST_AUTH_ENABLED,
+  email: AGENT_TEST_EMAIL,
+  password: AGENT_TEST_PASSWORD,
+});

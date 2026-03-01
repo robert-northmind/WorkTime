@@ -54,6 +54,28 @@ A personal, multi-user-capable work time-tracking web application built with Rea
     npm run dev
     ```
 
+### Optional: Agent test login mode (for local AI-agent testing)
+
+You can enable a special login path that accepts a hard-coded test user while still allowing normal Firebase auth for all other credentials.
+
+1. Add these values to `.env.local`:
+
+   ```env
+   VITE_AGENT_TEST_AUTH_ENABLED=true
+   VITE_AGENT_TEST_EMAIL=agent-test@example.com
+   VITE_AGENT_TEST_PASSWORD=agent-test-password
+   ```
+
+2. Run local dev:
+
+   ```bash
+   npm run dev
+   ```
+
+3. On `/login`, sign in with the configured test credentials (or use the "Fill test credentials" helper button).
+
+When this mode is disabled (or unset), authentication works normally via Firebase only.
+
 5.  **Build for production**:
     ```bash
     npm run build
