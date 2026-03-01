@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getCurrentUser } from '../services/auth/AuthService';
 import { 
   getUser, 
@@ -63,6 +63,7 @@ export const SettingsPage: React.FC = () => {
   const [newMilestone, setNewMilestone] = useState<Omit<Milestone, 'id'>>({ name: '', date: '', startDate: '', type: 'period' });
   const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null);
   const [pendingDeleteMilestone, setPendingDeleteMilestone] = useState<Milestone | null>(null);
+  const deleteMilestoneDialogRef = useRef<HTMLDivElement | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -203,6 +204,72 @@ export const SettingsPage: React.FC = () => {
     handleDeleteMilestone(pendingDeleteMilestone.id);
     setPendingDeleteMilestone(null);
   };
+
+  useEffect(() => {
+    if (!pendingDeleteMilestone) return;
+
+    const dialog = deleteMilestoneDialogRef.current;
+    const previousActive = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    const focusableSelector = [
+      'button:not([disabled])',
+      '[href]',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+      '[tabindex]:not([tabindex="-1"])',
+    ].join(',');
+
+    const getFocusableElements = () =>
+      dialog
+        ? Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector)).filter(
+            (element) => !element.hasAttribute('disabled') && element.tabIndex !== -1,
+          )
+        : [];
+
+    const focusableElements = getFocusableElements();
+    if (focusableElements.length > 0) {
+      focusableElements[0].focus();
+    } else {
+      dialog?.focus();
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        cancelDeleteMilestone();
+        return;
+      }
+
+      if (event.key !== 'Tab') return;
+
+      const currentFocusableElements = getFocusableElements();
+      if (currentFocusableElements.length === 0) {
+        event.preventDefault();
+        dialog?.focus();
+        return;
+      }
+
+      const firstElement = currentFocusableElements[0];
+      const lastElement = currentFocusableElements[currentFocusableElements.length - 1];
+      const activeElement = document.activeElement;
+
+      if (event.shiftKey && activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      previousActive?.focus();
+    };
+  }, [pendingDeleteMilestone]);
 
   const handleSaveYearly = async () => {
     if (!user) return;
@@ -712,10 +779,22 @@ export const SettingsPage: React.FC = () => {
 
 
           {pendingDeleteMilestone && (
-            <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
-              <div className="w-full max-w-sm rounded-xl border border-gray-100 bg-white p-5 shadow-xl">
-                <h5 className="text-base font-semibold text-gray-900">Delete milestone?</h5>
-                <p className="mt-2 text-sm text-gray-600">
+            <div
+              className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4"
+              onClick={cancelDeleteMilestone}
+            >
+              <div
+                ref={deleteMilestoneDialogRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="delete-milestone-title"
+                aria-describedby="delete-milestone-description"
+                tabIndex={-1}
+                className="w-full max-w-sm rounded-xl border border-gray-100 bg-white p-5 shadow-xl"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <h5 id="delete-milestone-title" className="text-base font-semibold text-gray-900">Delete milestone?</h5>
+                <p id="delete-milestone-description" className="mt-2 text-sm text-gray-600">
                   "{pendingDeleteMilestone.name}" will be removed from {selectedYear}. This action can’t be undone.
                 </p>
                 <div className="mt-4 flex justify-end gap-2">
