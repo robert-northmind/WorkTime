@@ -53,6 +53,10 @@ type MockAuthType = 'mock' | 'agent';
 // Simple event emitter for mock auth
 const getStoredMockAuthType = (): MockAuthType | null => {
   const authType = localStorage.getItem(MOCK_AUTH_STORAGE_KEY);
+  if (authType === 'agent' && !AGENT_TEST_AUTH_ENABLED) {
+    localStorage.removeItem(MOCK_AUTH_STORAGE_KEY);
+    return null;
+  }
   if (authType === 'agent' || authType === 'mock') return authType;
   if (authType === 'true') return 'mock'; // legacy support
   return null;
