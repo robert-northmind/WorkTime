@@ -641,7 +641,7 @@ export const SettingsPage: React.FC = () => {
                 <p className="text-xs text-gray-400 mt-1">Track fiscal quarters, deadlines, or product launches.</p>
               </div>
             ) : milestones.length > 0 && (
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {sortMilestonesByDate(milestones).map((milestone) => (
                   <div
                     key={milestone.id}
@@ -654,11 +654,11 @@ export const SettingsPage: React.FC = () => {
                         openEditMilestone(milestone);
                       }
                     }}
-                    className="group flex items-center gap-2 px-3 py-2 bg-white/80 border border-gray-200 rounded-lg hover:border-cyan-300 hover:bg-cyan-50/50 transition-colors cursor-pointer"
+                    className="group flex w-full min-w-0 items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white/80 px-3 py-2 transition-colors hover:border-cyan-300 hover:bg-cyan-50/50 cursor-pointer"
                   >
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-gray-800">{milestone.name}</span>
-                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <div className="flex min-w-0 flex-1 flex-col text-left">
+                      <span className="truncate text-sm font-medium text-gray-800">{milestone.name}</span>
+                      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-gray-500">
                         <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
                           milestone.type === 'period'
                             ? 'bg-cyan-100 text-cyan-700'
@@ -681,7 +681,7 @@ export const SettingsPage: React.FC = () => {
                         e.stopPropagation();
                         handleDeleteMilestone(milestone.id);
                       }}
-                      className="ml-1 p-1 text-gray-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
+                      className="ml-1 shrink-0 p-1 text-gray-400 opacity-0 transition-all hover:text-rose-500 group-hover:opacity-100"
                       title="Delete milestone"
                     >
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -695,8 +695,8 @@ export const SettingsPage: React.FC = () => {
           </div>
 
           {editingMilestone && (
-            <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
-              <div className="w-full max-w-md rounded-xl bg-white shadow-xl border border-gray-100 p-5 space-y-4">
+            <div className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-black/40 p-4 sm:items-center">
+              <div className="my-6 w-full max-w-md space-y-4 rounded-xl border border-gray-100 bg-white p-5 shadow-xl">
                 <div className="flex items-center justify-between">
                   <h5 className="text-base font-semibold text-gray-900">Edit Milestone</h5>
                   <button
@@ -727,23 +727,23 @@ export const SettingsPage: React.FC = () => {
                     <option value="period">Period</option>
                     <option value="event">Event</option>
                   </select>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <div>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <div className="min-w-0">
                       <label className="block text-xs text-gray-500 mb-1">Start date (optional)</label>
                       <input
                         type="date"
                         value={editingMilestone.startDate || ''}
                         onChange={(e) => setEditingMilestone({ ...editingMilestone, startDate: e.target.value })}
-                        className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-cyan-500 focus:border-cyan-500 text-sm"
+                        className="w-full min-w-0 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-cyan-500 focus:ring-cyan-500"
                       />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <label className="block text-xs text-gray-500 mb-1">{editingMilestone.type === 'period' ? 'End date' : 'Date'}</label>
                       <input
                         type="date"
                         value={editingMilestone.date}
                         onChange={(e) => setEditingMilestone({ ...editingMilestone, date: e.target.value })}
-                        className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-cyan-500 focus:border-cyan-500 text-sm"
+                        className="w-full min-w-0 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-cyan-500 focus:ring-cyan-500"
                       />
                     </div>
                   </div>
