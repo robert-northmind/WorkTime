@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { login, signup } from '../services/auth/AuthService';
+import { getAgentTestCredentials, login, signup } from '../services/auth/AuthService';
 import { Clock, Eye, EyeOff } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
@@ -9,6 +9,7 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   const [isSignup, setIsSignup] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const agentTestAuth = getAgentTestCredentials();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -46,6 +47,24 @@ export const LoginPage: React.FC = () => {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           <form className="space-y-6" onSubmit={handleSubmit}>
+            {agentTestAuth.enabled && (
+              <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded text-sm">
+                <p className="font-medium">Agent test login is enabled for this environment.</p>
+                <p className="mt-1 break-all">Use <strong>{agentTestAuth.email}</strong> with the Fill test credentials helper below.</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail(agentTestAuth.email);
+                    setPassword(agentTestAuth.password);
+                    setError('');
+                  }}
+                  className="mt-2 text-blue-700 underline hover:text-blue-900"
+                >
+                  Fill test credentials
+                </button>
+              </div>
+            )}
+
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded text-sm">
                 {error}
