@@ -7,6 +7,8 @@ import {
 import { auth, USE_MOCK } from '../firebase/config';
 import { getCurrentUser } from './AuthService';
 
+export { getInitials, validatePasswordChange, mapPasswordChangeError } from './ProfileUtils';
+
 export const updateProfile = async (
   displayName: string,
   photoURL: string | null

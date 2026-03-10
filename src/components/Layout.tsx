@@ -2,17 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { LogOut, Calendar, BarChart2, Settings } from 'lucide-react';
 import { logout, subscribeToAuthChanges } from '../services/auth/AuthService';
+import { ProfileAvatar } from './ProfileAvatar';
 import type { User } from 'firebase/auth';
-
-const getInitials = (displayName: string | null, email: string | null): string => {
-  if (displayName) {
-    const parts = displayName.trim().split(/\s+/);
-    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-    return displayName[0].toUpperCase();
-  }
-  if (email) return email[0].toUpperCase();
-  return '?';
-};
 
 export const Layout: React.FC = () => {
   const navigate = useNavigate();
@@ -26,8 +17,6 @@ export const Layout: React.FC = () => {
     await logout();
     navigate('/login');
   };
-
-  const initials = getInitials(user?.displayName ?? null, user?.email ?? null);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -61,20 +50,14 @@ export const Layout: React.FC = () => {
             <Link
               to="/profile"
               title={user?.displayName || user?.email || 'Profile'}
-              className="flex items-center justify-center h-9 w-9 rounded-full hover:ring-2 hover:ring-blue-400 transition-all overflow-hidden"
+              className="rounded-full hover:ring-2 hover:ring-blue-400 transition-all"
             >
-              {user?.photoURL ? (
-                <img
-                  src={user.photoURL}
-                  alt="Profile"
-                  className="h-9 w-9 rounded-full object-cover"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                />
-              ) : (
-                <div className="h-9 w-9 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold select-none">
-                  {initials}
-                </div>
-              )}
+              <ProfileAvatar
+                photoURL={user?.photoURL}
+                displayName={user?.displayName}
+                email={user?.email}
+                size="md"
+              />
             </Link>
             <button
               onClick={handleLogout}
