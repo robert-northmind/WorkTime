@@ -6,6 +6,7 @@ import { AddEntryPage } from "./pages/AddEntryPage";
 import { TimesheetPage } from "./pages/TimesheetPage";
 import { StatsPage } from "./pages/StatsPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { ProfilePage } from "./pages/ProfilePage";
 import { subscribeToAuthChanges } from "./services/auth/AuthService";
 import { setFaroUser, clearFaroUser } from "./services/faro/FaroService";
 import type { User } from "firebase/auth";
@@ -72,6 +73,7 @@ const App: React.FC = () => {
           <Route path="timesheet" element={<TimesheetPage />} />
           <Route path="stats" element={<StatsPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="profile" element={<ProfilePage />} />
         </Route>
       </Routes>
     </BrowserRouter>
