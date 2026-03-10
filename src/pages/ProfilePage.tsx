@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { User as UserIcon, Lock, Info, Camera } from 'lucide-react';
 import { subscribeToAuthChanges, isMockSession } from '../services/auth/AuthService';
 import {
@@ -7,6 +7,7 @@ import {
   validatePasswordChange,
   mapPasswordChangeError,
 } from '../services/auth/ProfileService';
+import { PhotoCropModal } from '../components/PhotoCropModal';
 import { getUser } from '../services/firestore/FirestoreService';
 import { ProfileAvatar } from '../components/ProfileAvatar';
 import { Alert } from '../components/Alert';
@@ -21,6 +22,8 @@ export const ProfilePage: React.FC = () => {
 
   const [displayName, setDisplayName] = useState('');
   const [photoURL, setPhotoURL] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [cropSrcUrl, setCropSrcUrl] = useState<string | null>(null);
   const [profileAlert, setProfileAlert] = useState<AlertState>(null);
   const [savingProfile, setSavingProfile] = useState(false);
 
@@ -93,6 +96,24 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
+  const handlePhotoFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    setCropSrcUrl(URL.createObjectURL(file));
+  };
+
+  const handleCropConfirm = (dataUrl: string) => {
+    if (cropSrcUrl) URL.revokeObjectURL(cropSrcUrl);
+    setCropSrcUrl(null);
+    setPhotoURL(dataUrl);
+  };
+
+  const handleCropCancel = () => {
+    if (cropSrcUrl) URL.revokeObjectURL(cropSrcUrl);
+    setCropSrcUrl(null);
+  };
+
   return (
     <div className="max-w-xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
@@ -117,7 +138,7 @@ export const ProfilePage: React.FC = () => {
           </div>
         </div>
 
-        {isMock && (
+        {isMock && import.meta.env.DEV && (
           <div className="mb-4 px-4 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
             Profile changes are not saved in demo/test mode.
           </div>
@@ -144,18 +165,36 @@ export const ProfilePage: React.FC = () => {
               className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1"
             >
               <Camera className="h-3.5 w-3.5" />
-              Photo URL
+              Photo
             </label>
+            <div className="flex gap-2">
+              <input
+                id="photoURL"
+                type="url"
+                value={photoURL}
+                onChange={(e) => setPhotoURL(e.target.value)}
+                placeholder="https://example.com/photo.jpg"
+                className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                title="Choose a photo from your device"
+                className="shrink-0 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-1.5"
+              >
+                <Camera className="h-4 w-4" />
+                <span className="hidden sm:inline">Choose</span>
+              </button>
+            </div>
             <input
-              id="photoURL"
-              type="url"
-              value={photoURL}
-              onChange={(e) => setPhotoURL(e.target.value)}
-              placeholder="https://example.com/photo.jpg"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handlePhotoFilePick}
             />
             <p className="mt-1 text-xs text-gray-500">
-              Paste a publicly accessible image URL. Leave blank to use your initials.
+              Paste an image URL or pick a photo from your device. Leave blank to use your initials.
             </p>
           </div>
 
@@ -180,7 +219,7 @@ export const ProfilePage: React.FC = () => {
           Change Password
         </h2>
 
-        {isMock && (
+        {isMock && import.meta.env.DEV && (
           <div className="mb-4 px-4 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
             Password changes are not available in demo/test mode.
           </div>
@@ -261,12 +300,15 @@ export const ProfilePage: React.FC = () => {
             <dt className="text-gray-500">Member since</dt>
             <dd className="text-gray-900 font-medium">{memberSince ?? '—'}</dd>
           </div>
-          <div className="flex justify-between">
-            <dt className="text-gray-500">User ID</dt>
-            <dd className="text-gray-400 font-mono text-xs truncate max-w-[180px]">{user?.uid ?? '—'}</dd>
-          </div>
         </dl>
       </section>
+      {cropSrcUrl && (
+        <PhotoCropModal
+          srcUrl={cropSrcUrl}
+          onConfirm={handleCropConfirm}
+          onCancel={handleCropCancel}
+        />
+      )}
     </div>
   );
 };
