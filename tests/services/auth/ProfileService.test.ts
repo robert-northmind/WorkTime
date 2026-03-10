@@ -37,6 +37,22 @@ describe('ProfileService', () => {
     it('handles extra whitespace in display name', () => {
       expect(getInitials('  Alice   Bob  ', null)).toBe('AB');
     });
+
+    it('ignores emoji words and uses the first letter-word', () => {
+      expect(getInitials('Robert 👋 🧑', null)).toBe('R');
+    });
+
+    it('uses letter-words when emoji precede them', () => {
+      expect(getInitials('👋 Alice Bob', null)).toBe('AB');
+    });
+
+    it('falls back to email initial when all words are emoji', () => {
+      expect(getInitials('👋 🧑', 'jane@example.com')).toBe('J');
+    });
+
+    it('returns ? when name is all emoji and no email', () => {
+      expect(getInitials('👋 🧑', null)).toBe('?');
+    });
   });
 
   describe('validatePasswordChange', () => {
