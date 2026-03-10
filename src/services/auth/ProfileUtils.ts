@@ -36,6 +36,40 @@ export const compressImageFile = (file: File): Promise<string> =>
     img.src = objectUrl;
   });
 
+const CROP_OUTPUT_SIZE = 200;
+
+export const cropImageToDataUrl = (
+  img: HTMLImageElement,
+  crop: { x: number; y: number; width: number; height: number },
+): string => {
+  const scaleX = img.naturalWidth / img.width;
+  const scaleY = img.naturalHeight / img.height;
+  const canvas = document.createElement('canvas');
+  canvas.width = CROP_OUTPUT_SIZE;
+  canvas.height = CROP_OUTPUT_SIZE;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas not supported');
+
+  // Circular clip
+  ctx.beginPath();
+  ctx.arc(CROP_OUTPUT_SIZE / 2, CROP_OUTPUT_SIZE / 2, CROP_OUTPUT_SIZE / 2, 0, Math.PI * 2);
+  ctx.clip();
+
+  ctx.drawImage(
+    img,
+    crop.x * scaleX,
+    crop.y * scaleY,
+    crop.width * scaleX,
+    crop.height * scaleY,
+    0,
+    0,
+    CROP_OUTPUT_SIZE,
+    CROP_OUTPUT_SIZE,
+  );
+
+  return canvas.toDataURL('image/jpeg', 0.9);
+};
+
 const PASSWORD_MIN_LENGTH = 6;
 
 export const validatePasswordChange = (

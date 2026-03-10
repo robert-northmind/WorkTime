@@ -7,7 +7,7 @@ import {
   validatePasswordChange,
   mapPasswordChangeError,
 } from '../services/auth/ProfileService';
-import { compressImageFile } from '../services/auth/ProfileUtils';
+import { PhotoCropModal } from '../components/PhotoCropModal';
 import { getUser } from '../services/firestore/FirestoreService';
 import { ProfileAvatar } from '../components/ProfileAvatar';
 import { Alert } from '../components/Alert';
@@ -23,6 +23,7 @@ export const ProfilePage: React.FC = () => {
   const [displayName, setDisplayName] = useState('');
   const [photoURL, setPhotoURL] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [cropSrcUrl, setCropSrcUrl] = useState<string | null>(null);
   const [profileAlert, setProfileAlert] = useState<AlertState>(null);
   const [savingProfile, setSavingProfile] = useState(false);
 
@@ -95,16 +96,22 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
-  const handlePhotoFilePick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
-    try {
-      const dataUrl = await compressImageFile(file);
-      setPhotoURL(dataUrl);
-    } catch {
-      setProfileAlert({ type: 'error', message: 'Could not load the selected image.' });
-    }
+    setCropSrcUrl(URL.createObjectURL(file));
+  };
+
+  const handleCropConfirm = (dataUrl: string) => {
+    if (cropSrcUrl) URL.revokeObjectURL(cropSrcUrl);
+    setCropSrcUrl(null);
+    setPhotoURL(dataUrl);
+  };
+
+  const handleCropCancel = () => {
+    if (cropSrcUrl) URL.revokeObjectURL(cropSrcUrl);
+    setCropSrcUrl(null);
   };
 
   return (
@@ -295,6 +302,13 @@ export const ProfilePage: React.FC = () => {
           </div>
         </dl>
       </section>
+      {cropSrcUrl && (
+        <PhotoCropModal
+          srcUrl={cropSrcUrl}
+          onConfirm={handleCropConfirm}
+          onCancel={handleCropCancel}
+        />
+      )}
     </div>
   );
 };
