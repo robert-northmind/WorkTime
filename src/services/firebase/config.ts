@@ -2,6 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getAnalytics, type Analytics } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getStorage, type FirebaseStorage } from "firebase/storage";
 
 // TODO: Replace with your app's Firebase project configuration
 // For development, we can use emulators or a dev project
@@ -20,6 +21,7 @@ export const USE_MOCK = !config.apiKey || config.apiKey === "your_api_key";
 let app;
 let authInstance;
 let dbInstance;
+let storageInstance: FirebaseStorage | undefined;
 let analyticsInstance: Analytics | undefined;
 
 if (!USE_MOCK) {
@@ -27,6 +29,7 @@ if (!USE_MOCK) {
     app = initializeApp(config);
     authInstance = getAuth(app);
     dbInstance = getFirestore(app);
+    storageInstance = getStorage(app);
     analyticsInstance = getAnalytics(app);
   } catch (error) {
     console.warn(
@@ -42,4 +45,5 @@ if (!USE_MOCK) {
 
 export const auth = authInstance;
 export const db = dbInstance;
+export const storage = storageInstance;
 export const analytics = analyticsInstance;

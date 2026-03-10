@@ -4,6 +4,74 @@ import {
   mapPasswordChangeError,
 } from '../../../src/services/auth/ProfileUtils';
 
+const mockRef = jest.fn();
+const mockUploadString = jest.fn();
+const mockGetDownloadURL = jest.fn();
+const mockDeleteObject = jest.fn();
+
+jest.mock('firebase/storage', () => ({
+  ref: (...args: unknown[]) => mockRef(...args),
+  uploadString: (...args: unknown[]) => mockUploadString(...args),
+  getDownloadURL: (...args: unknown[]) => mockGetDownloadURL(...args),
+  deleteObject: (...args: unknown[]) => mockDeleteObject(...args),
+}));
+
+const mockStorage = {};
+
+jest.mock('../../../src/services/firebase/config', () => ({
+  storage: mockStorage,
+  USE_MOCK: false,
+}));
+
+jest.mock('../../../src/services/auth/AuthService', () => ({
+  getCurrentUser: jest.fn(),
+}));
+
+import { uploadProfilePhoto } from '../../../src/services/auth/ProfileService';
+
+describe('uploadProfilePhoto', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockRef.mockReturnValue('mock-ref');
+    mockUploadString.mockResolvedValue(undefined);
+    mockGetDownloadURL.mockResolvedValue('https://storage.example.com/new-photo.jpg');
+  });
+
+  it('uploads photo and returns download URL', async () => {
+    const url = await uploadProfilePhoto('user-1', 'data:image/jpeg;base64,abc', null);
+
+    expect(mockRef).toHaveBeenCalledWith(mockStorage, expect.stringContaining('profilePhotos/user-1/'));
+    expect(mockUploadString).toHaveBeenCalledWith('mock-ref', 'data:image/jpeg;base64,abc', 'data_url');
+    expect(mockGetDownloadURL).toHaveBeenCalledWith('mock-ref');
+    expect(url).toBe('https://storage.example.com/new-photo.jpg');
+  });
+
+  it('deletes old photo before uploading new one', async () => {
+    const oldRef = 'old-ref';
+    mockRef.mockImplementation((_storage: unknown, path: string) =>
+      path.includes('old-photo') ? oldRef : 'new-ref'
+    );
+
+    await uploadProfilePhoto('user-1', 'data:image/jpeg;base64,abc', 'profilePhotos/user-1/old-photo.jpg');
+
+    expect(mockDeleteObject).toHaveBeenCalledWith(oldRef);
+  });
+
+  it('does not delete when no old photo URL provided', async () => {
+    await uploadProfilePhoto('user-1', 'data:image/jpeg;base64,abc', null);
+
+    expect(mockDeleteObject).not.toHaveBeenCalled();
+  });
+
+  it('continues upload even if deleting old photo fails', async () => {
+    mockDeleteObject.mockRejectedValue(new Error('not found'));
+
+    const url = await uploadProfilePhoto('user-1', 'data:image/jpeg;base64,abc', 'old-url');
+
+    expect(url).toBe('https://storage.example.com/new-photo.jpg');
+  });
+});
+
 describe('ProfileService', () => {
   describe('getInitials', () => {
     it('returns first letters of first and last name', () => {

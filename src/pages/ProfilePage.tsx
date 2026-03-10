@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { User as UserIcon, Lock, Info, Camera } from 'lucide-react';
+import { User as UserIcon, Lock, Info, Camera, X } from 'lucide-react';
 import { subscribeToAuthChanges, isMockSession } from '../services/auth/AuthService';
 import {
   updateProfile,
   updatePassword,
+  uploadProfilePhoto,
   validatePasswordChange,
   mapPasswordChangeError,
 } from '../services/auth/ProfileService';
@@ -24,6 +25,7 @@ export const ProfilePage: React.FC = () => {
   const [photoURL, setPhotoURL] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [cropSrcUrl, setCropSrcUrl] = useState<string | null>(null);
+  const [pendingPhotoDataUrl, setPendingPhotoDataUrl] = useState<string | null>(null);
   const [profileAlert, setProfileAlert] = useState<AlertState>(null);
   const [savingProfile, setSavingProfile] = useState(false);
 
@@ -60,7 +62,13 @@ export const ProfilePage: React.FC = () => {
     setSavingProfile(true);
     setProfileAlert(null);
     try {
-      await updateProfile(displayName.trim(), photoURL.trim() || null);
+      let urlToSave = photoURL.trim() || null;
+      if (pendingPhotoDataUrl && user) {
+        urlToSave = await uploadProfilePhoto(user.uid, pendingPhotoDataUrl, photoURL.trim() || null);
+        setPhotoURL(urlToSave);
+        setPendingPhotoDataUrl(null);
+      }
+      await updateProfile(displayName.trim(), urlToSave);
       setProfileAlert({ type: 'success', message: 'Profile updated successfully.' });
     } catch (err) {
       setProfileAlert({
@@ -106,7 +114,7 @@ export const ProfilePage: React.FC = () => {
   const handleCropConfirm = (dataUrl: string) => {
     if (cropSrcUrl) URL.revokeObjectURL(cropSrcUrl);
     setCropSrcUrl(null);
-    setPhotoURL(dataUrl);
+    setPendingPhotoDataUrl(dataUrl);
   };
 
   const handleCropCancel = () => {
@@ -168,14 +176,33 @@ export const ProfilePage: React.FC = () => {
               Photo
             </label>
             <div className="flex gap-2">
-              <input
-                id="photoURL"
-                type="url"
-                value={photoURL}
-                onChange={(e) => setPhotoURL(e.target.value)}
-                placeholder="https://example.com/photo.jpg"
-                className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
+              {pendingPhotoDataUrl ? (
+                <div className="flex items-center gap-2 flex-1 min-w-0 px-3 py-2 border border-blue-300 rounded-lg bg-blue-50">
+                  <img
+                    src={pendingPhotoDataUrl}
+                    alt="Cropped photo preview"
+                    className="w-8 h-8 rounded-full object-cover shrink-0"
+                  />
+                  <span className="text-sm text-blue-700 flex-1 truncate">Photo ready — will upload on save</span>
+                  <button
+                    type="button"
+                    onClick={() => setPendingPhotoDataUrl(null)}
+                    title="Remove"
+                    className="text-blue-400 hover:text-blue-600 shrink-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <input
+                  id="photoURL"
+                  type="url"
+                  value={photoURL}
+                  onChange={(e) => setPhotoURL(e.target.value)}
+                  placeholder="https://example.com/photo.jpg"
+                  className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              )}
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
