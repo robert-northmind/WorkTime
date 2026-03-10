@@ -178,6 +178,8 @@ export const getCurrentUser = (): User | null => {
   return auth?.currentUser || null;
 };
 
+export const isMockSession = (): boolean => USE_MOCK || mockAuthType !== null;
+
 export const getAgentTestCredentials = (): { enabled: boolean; email: string; password: string } => ({
   enabled: AGENT_TEST_AUTH_ENABLED,
   email: AGENT_TEST_EMAIL,
