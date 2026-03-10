@@ -39,10 +39,13 @@ firebase deploy --only storage
 
 ### Option 2: Disable the Storage API entirely (nuclear)
 
-1. Go to Google Cloud Console → **APIs & Services** → search for **Cloud Storage for Firebase API**
-2. Click **Disable API**
+Direct link (replace `YOUR_PROJECT_ID` with your Firebase project ID):
 
-Re-enable the API from the same page when ready.
+```
+https://console.cloud.google.com/apis/api/firebasestorage.googleapis.com/overview?project=YOUR_PROJECT_ID
+```
+
+Click **Disable API** on that page. Re-enable from the same page when ready.
 
 ### Option 3: Delete all stored files
 
