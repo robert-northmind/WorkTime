@@ -39,7 +39,7 @@ firebase deploy --only storage
 
 ### Option 2: Disable the Storage API entirely (nuclear)
 
-Direct link (replace `YOUR_PROJECT_ID` with your Firebase project ID):
+Direct link (replace `YOUR_PROJECT_ID` with your Firebase project ID — found in `.firebaserc` or your hosting URL e.g. `YOUR_PROJECT_ID.web.app`):
 
 ```
 https://console.cloud.google.com/apis/api/firebasestorage.googleapis.com/overview?project=YOUR_PROJECT_ID
