@@ -64,7 +64,7 @@ export const ProfilePage: React.FC = () => {
     try {
       let urlToSave = photoURL.trim() || null;
       if (pendingPhotoDataUrl && user) {
-        urlToSave = await uploadProfilePhoto(user.uid, pendingPhotoDataUrl);
+        urlToSave = await uploadProfilePhoto(user.uid, pendingPhotoDataUrl, photoURL.trim() || null);
         setPhotoURL(urlToSave);
         setPendingPhotoDataUrl(null);
       }
