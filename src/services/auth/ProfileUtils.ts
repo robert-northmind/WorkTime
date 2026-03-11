@@ -8,67 +8,17 @@ export const getInitials = (displayName: string | null, email: string | null): s
   return '?';
 };
 
-const MAX_PHOTO_SIZE = 200;
-
-export const compressImageFile = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const img = new Image();
-    const objectUrl = URL.createObjectURL(file);
-    img.onload = () => {
-      const scale = Math.min(1, MAX_PHOTO_SIZE / Math.max(img.width, img.height));
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        URL.revokeObjectURL(objectUrl);
-        reject(new Error('Canvas not supported'));
-        return;
-      }
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL('image/jpeg', 0.85));
-      URL.revokeObjectURL(objectUrl);
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(objectUrl);
-      reject(new Error('Failed to load image'));
-    };
-    img.src = objectUrl;
-  });
-
-const CROP_OUTPUT_SIZE = 200;
-
-export const cropImageToDataUrl = (
-  img: HTMLImageElement,
-  crop: { x: number; y: number; width: number; height: number },
-): string => {
-  const scaleX = img.naturalWidth / img.width;
-  const scaleY = img.naturalHeight / img.height;
-  const canvas = document.createElement('canvas');
-  canvas.width = CROP_OUTPUT_SIZE;
-  canvas.height = CROP_OUTPUT_SIZE;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('Canvas not supported');
-
-  // Circular clip
-  ctx.beginPath();
-  ctx.arc(CROP_OUTPUT_SIZE / 2, CROP_OUTPUT_SIZE / 2, CROP_OUTPUT_SIZE / 2, 0, Math.PI * 2);
-  ctx.clip();
-
-  ctx.drawImage(
-    img,
-    crop.x * scaleX,
-    crop.y * scaleY,
-    crop.width * scaleX,
-    crop.height * scaleY,
-    0,
-    0,
-    CROP_OUTPUT_SIZE,
-    CROP_OUTPUT_SIZE,
-  );
-
-  return canvas.toDataURL('image/jpeg', 0.9);
+export const hashEmail = async (email: string): Promise<string> => {
+  const normalized = email.trim().toLowerCase();
+  const data = new TextEncoder().encode(normalized);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
 };
+
+export const getGravatarUrl = (emailHash: string, size = 200): string =>
+  `https://gravatar.com/avatar/${emailHash}?s=${size}&d=404`;
 
 const PASSWORD_MIN_LENGTH = 6;
 
