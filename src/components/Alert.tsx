@@ -21,7 +21,7 @@ export const Alert: React.FC<AlertProps> = ({ type, message, onDismiss }) => (
       <AlertCircle className="h-4 w-4 shrink-0" />
     )}
     <span className="flex-1">{message}</span>
-    <button onClick={onDismiss} className="text-current opacity-60 hover:opacity-100 ml-2">
+    <button onClick={onDismiss} aria-label="Dismiss" className="text-current opacity-60 hover:opacity-100 ml-2">
       ✕
     </button>
   </div>

@@ -49,8 +49,24 @@ describe("ScheduleService", () => {
     expect(getExpectedDailyHours("2023-07-03", schedules)).toBe(7.5);
   });
 
-  it("uses the latest schedule if multiple match", () => {
-    // Already covered above, but ensures sorting logic
+  it("uses the latest schedule when multiple are active for the date", () => {
+    const schedules: WorkSchedule[] = [
+      {
+        effectiveDate: "2023-01-01",
+        weeklyHours: 40,
+        workDays: [1, 2, 3, 4, 5],
+      },
+      {
+        effectiveDate: "2023-07-01",
+        weeklyHours: 30,
+        workDays: [1, 2, 3, 4],
+      },
+    ];
+
+    // Date in August should use the July schedule (30h / 4 days = 7.5h/day)
+    expect(getExpectedDailyHours("2023-08-07", schedules)).toBe(7.5); // Monday
+    // Date in June should still use the January schedule (40h / 5 days = 8h/day)
+    expect(getExpectedDailyHours("2023-06-05", schedules)).toBe(8); // Monday
   });
 
   it("returns 0 if no schedule is active yet", () => {

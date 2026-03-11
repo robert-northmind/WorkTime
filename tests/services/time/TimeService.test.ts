@@ -40,9 +40,18 @@ describe('TimeService', () => {
       expect(calculateDuration('09:00', '09:30')).toBe(30);
     });
 
-    it('handles end time before start time (assuming same day error or 0)', () => {
-      // Assumption: User doesn't work overnight as per requirements
-      expect(calculateDuration('17:00', '09:00')).toBeLessThanOrEqual(0);
+    it('returns negative duration when end time is before start time', () => {
+      // 09:00 to 17:00 reversed: 9*60 - 17*60 = 540 - 1020 = -480
+      expect(calculateDuration('17:00', '09:00')).toBe(-480);
+    });
+
+    it('returns 0 when start and end times are equal', () => {
+      expect(calculateDuration('09:00', '09:00')).toBe(0);
+    });
+
+    it('returns 0 for empty time strings', () => {
+      expect(calculateDuration('', '')).toBe(0);
+      expect(calculateDuration('09:00', '')).toBe(-540);
     });
   });
 
