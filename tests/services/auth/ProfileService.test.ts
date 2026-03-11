@@ -1,74 +1,34 @@
 import {
   getInitials,
+  hashEmail,
+  getGravatarUrl,
   validatePasswordChange,
   mapPasswordChangeError,
 } from '../../../src/services/auth/ProfileUtils';
 
-const mockRef = jest.fn();
-const mockUploadString = jest.fn();
-const mockGetDownloadURL = jest.fn();
-const mockDeleteObject = jest.fn();
-
-jest.mock('firebase/storage', () => ({
-  ref: (...args: unknown[]) => mockRef(...args),
-  uploadString: (...args: unknown[]) => mockUploadString(...args),
-  getDownloadURL: (...args: unknown[]) => mockGetDownloadURL(...args),
-  deleteObject: (...args: unknown[]) => mockDeleteObject(...args),
-}));
-
-const mockStorage = {};
-
-jest.mock('../../../src/services/firebase/config', () => ({
-  storage: mockStorage,
-  USE_MOCK: false,
-}));
-
-jest.mock('../../../src/services/auth/AuthService', () => ({
-  getCurrentUser: jest.fn(),
-}));
-
-import { uploadProfilePhoto } from '../../../src/services/auth/ProfileService';
-
-describe('uploadProfilePhoto', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockRef.mockReturnValue('mock-ref');
-    mockUploadString.mockResolvedValue(undefined);
-    mockGetDownloadURL.mockResolvedValue('https://storage.example.com/new-photo.jpg');
+describe('hashEmail', () => {
+  it('returns correct SHA-256 hex for a known email', async () => {
+    // SHA-256 of "test@example.com" (lowercase, trimmed)
+    const hash = await hashEmail('test@example.com');
+    expect(hash).toBe('973dfe463ec85785f5f95af5ba3906eedb2d931c24e69824a89ea65dba4e813b');
   });
 
-  it('uploads photo and returns download URL', async () => {
-    const url = await uploadProfilePhoto('user-1', 'data:image/jpeg;base64,abc', null);
+  it('lowercases and trims the email before hashing', async () => {
+    const hash1 = await hashEmail('  Test@Example.COM  ');
+    const hash2 = await hashEmail('test@example.com');
+    expect(hash1).toBe(hash2);
+  });
+});
 
-    expect(mockRef).toHaveBeenCalledWith(mockStorage, expect.stringContaining('profilePhotos/user-1/'));
-    expect(mockUploadString).toHaveBeenCalledWith('mock-ref', 'data:image/jpeg;base64,abc', 'data_url');
-    expect(mockGetDownloadURL).toHaveBeenCalledWith('mock-ref');
-    expect(url).toBe('https://storage.example.com/new-photo.jpg');
+describe('getGravatarUrl', () => {
+  it('returns correct URL format with default size', () => {
+    const url = getGravatarUrl('abc123');
+    expect(url).toBe('https://gravatar.com/avatar/abc123?s=200&d=404');
   });
 
-  it('deletes old photo before uploading new one', async () => {
-    const oldRef = 'old-ref';
-    mockRef.mockImplementation((_storage: unknown, path: string) =>
-      path.includes('old-photo') ? oldRef : 'new-ref'
-    );
-
-    await uploadProfilePhoto('user-1', 'data:image/jpeg;base64,abc', 'profilePhotos/user-1/old-photo.jpg');
-
-    expect(mockDeleteObject).toHaveBeenCalledWith(oldRef);
-  });
-
-  it('does not delete when no old photo URL provided', async () => {
-    await uploadProfilePhoto('user-1', 'data:image/jpeg;base64,abc', null);
-
-    expect(mockDeleteObject).not.toHaveBeenCalled();
-  });
-
-  it('continues upload even if deleting old photo fails', async () => {
-    mockDeleteObject.mockRejectedValue(new Error('not found'));
-
-    const url = await uploadProfilePhoto('user-1', 'data:image/jpeg;base64,abc', 'old-url');
-
-    expect(url).toBe('https://storage.example.com/new-photo.jpg');
+  it('accepts custom size', () => {
+    const url = getGravatarUrl('abc123', 80);
+    expect(url).toBe('https://gravatar.com/avatar/abc123?s=80&d=404');
   });
 });
 

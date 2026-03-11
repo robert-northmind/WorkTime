@@ -1,14 +1,12 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { User as UserIcon, Lock, Info, Camera, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { User as UserIcon, Lock, Info, ExternalLink } from 'lucide-react';
 import { subscribeToAuthChanges, isMockSession } from '../services/auth/AuthService';
 import {
   updateProfile,
   updatePassword,
-  uploadProfilePhoto,
   validatePasswordChange,
   mapPasswordChangeError,
 } from '../services/auth/ProfileService';
-import { PhotoCropModal } from '../components/PhotoCropModal';
 import { getUser } from '../services/firestore/FirestoreService';
 import { ProfileAvatar } from '../components/ProfileAvatar';
 import { Alert } from '../components/Alert';
@@ -22,10 +20,6 @@ export const ProfilePage: React.FC = () => {
   const [isMock, setIsMock] = useState(false);
 
   const [displayName, setDisplayName] = useState('');
-  const [photoURL, setPhotoURL] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [cropSrcUrl, setCropSrcUrl] = useState<string | null>(null);
-  const [pendingPhotoDataUrl, setPendingPhotoDataUrl] = useState<string | null>(null);
   const [profileAlert, setProfileAlert] = useState<AlertState>(null);
   const [savingProfile, setSavingProfile] = useState(false);
 
@@ -41,7 +35,6 @@ export const ProfilePage: React.FC = () => {
       setIsMock(isMockSession());
       if (u) {
         setDisplayName(u.displayName ?? '');
-        setPhotoURL(u.photoURL ?? '');
         getUser(u.uid).then((doc) => {
           if (doc?.createdAt) {
             setMemberSince(
@@ -62,13 +55,7 @@ export const ProfilePage: React.FC = () => {
     setSavingProfile(true);
     setProfileAlert(null);
     try {
-      let urlToSave = photoURL.trim() || null;
-      if (pendingPhotoDataUrl && user) {
-        urlToSave = await uploadProfilePhoto(user.uid, pendingPhotoDataUrl, photoURL.trim() || null);
-        setPhotoURL(urlToSave);
-        setPendingPhotoDataUrl(null);
-      }
-      await updateProfile(displayName.trim(), urlToSave);
+      await updateProfile(displayName.trim());
       setProfileAlert({ type: 'success', message: 'Profile updated successfully.' });
     } catch (err) {
       setProfileAlert({
@@ -104,24 +91,6 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
-  const handlePhotoFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    e.target.value = '';
-    setCropSrcUrl(URL.createObjectURL(file));
-  };
-
-  const handleCropConfirm = (dataUrl: string) => {
-    if (cropSrcUrl) URL.revokeObjectURL(cropSrcUrl);
-    setCropSrcUrl(null);
-    setPendingPhotoDataUrl(dataUrl);
-  };
-
-  const handleCropCancel = () => {
-    if (cropSrcUrl) URL.revokeObjectURL(cropSrcUrl);
-    setCropSrcUrl(null);
-  };
-
   return (
     <div className="max-w-xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
@@ -135,7 +104,6 @@ export const ProfilePage: React.FC = () => {
 
         <div className="flex items-center gap-4 mb-6">
           <ProfileAvatar
-            photoURL={user?.photoURL}
             displayName={user?.displayName}
             email={user?.email}
             size="lg"
@@ -168,60 +136,39 @@ export const ProfilePage: React.FC = () => {
           </div>
 
           <div>
-            <label
-              htmlFor="photoURL"
-              className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1"
-            >
-              <Camera className="h-3.5 w-3.5" />
-              Photo
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Avatar
             </label>
-            <div className="flex gap-2">
-              {pendingPhotoDataUrl ? (
-                <div className="flex items-center gap-2 flex-1 min-w-0 px-3 py-2 border border-blue-300 rounded-lg bg-blue-50">
-                  <img
-                    src={pendingPhotoDataUrl}
-                    alt="Cropped photo preview"
-                    className="w-8 h-8 rounded-full object-cover shrink-0"
-                  />
-                  <span className="text-sm text-blue-700 flex-1 truncate">Photo ready — will upload on save</span>
-                  <button
-                    type="button"
-                    onClick={() => setPendingPhotoDataUrl(null)}
-                    title="Remove"
-                    className="text-blue-400 hover:text-blue-600 shrink-0"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ) : (
-                <input
-                  id="photoURL"
-                  type="url"
-                  value={photoURL}
-                  onChange={(e) => setPhotoURL(e.target.value)}
-                  placeholder="https://example.com/photo.jpg"
-                  className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              )}
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                title="Choose a photo from your device"
-                className="shrink-0 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-1.5"
+            <div className="flex items-center gap-3 px-3 py-2.5 border border-gray-200 rounded-lg bg-gray-50">
+              <ProfileAvatar
+                displayName={user?.displayName}
+                email={user?.email}
+                size="sm"
+              />
+              <p className="text-sm text-gray-600 flex-1">
+                Your avatar is powered by{' '}
+                <a
+                  href="https://gravatar.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  Gravatar
+                </a>
+                , linked to your email address.
+              </p>
+              <a
+                href="https://gravatar.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-medium text-gray-700 hover:bg-white transition-colors"
               >
-                <Camera className="h-4 w-4" />
-                <span className="hidden sm:inline">Choose</span>
-              </button>
+                Change
+                <ExternalLink className="h-3 w-3" />
+              </a>
             </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handlePhotoFilePick}
-            />
             <p className="mt-1 text-xs text-gray-500">
-              Paste an image URL or pick a photo from your device. Leave blank to use your initials.
+              Sign up or update your avatar at gravatar.com. Changes appear everywhere automatically.
             </p>
           </div>
 
@@ -234,7 +181,7 @@ export const ProfilePage: React.FC = () => {
             disabled={savingProfile}
             className="w-full sm:w-auto px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {savingProfile ? 'Saving…' : 'Save profile'}
+            {savingProfile ? 'Saving...' : 'Save profile'}
           </button>
         </form>
       </section>
@@ -307,7 +254,7 @@ export const ProfilePage: React.FC = () => {
             disabled={savingPassword || isMock}
             className="w-full sm:w-auto px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {savingPassword ? 'Changing…' : 'Change password'}
+            {savingPassword ? 'Changing...' : 'Change password'}
           </button>
         </form>
       </section>
@@ -329,13 +276,6 @@ export const ProfilePage: React.FC = () => {
           </div>
         </dl>
       </section>
-      {cropSrcUrl && (
-        <PhotoCropModal
-          srcUrl={cropSrcUrl}
-          onConfirm={handleCropConfirm}
-          onCancel={handleCropCancel}
-        />
-      )}
     </div>
   );
 };

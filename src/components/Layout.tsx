@@ -53,7 +53,6 @@ export const Layout: React.FC = () => {
               className="rounded-full hover:ring-2 hover:ring-blue-400 transition-all"
             >
               <ProfileAvatar
-                photoURL={user?.photoURL}
                 displayName={user?.displayName}
                 email={user?.email}
                 size="md"

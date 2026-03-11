@@ -1,8 +1,7 @@
-import React from 'react';
-import { getInitials } from '../services/auth/ProfileUtils';
+import React, { useCallback, useEffect, useState } from 'react';
+import { getInitials, hashEmail, getGravatarUrl } from '../services/auth/ProfileUtils';
 
 interface ProfileAvatarProps {
-  photoURL?: string | null;
   displayName?: string | null;
   email?: string | null;
   size?: 'sm' | 'md' | 'lg';
@@ -15,25 +14,43 @@ const sizeClasses: Record<NonNullable<ProfileAvatarProps['size']>, string> = {
   lg: 'h-16 w-16 text-xl',
 };
 
+const resolveGravatarUrl = async (email: string | null | undefined): Promise<string | null> => {
+  if (!email) return null;
+  const hash = await hashEmail(email);
+  return getGravatarUrl(hash);
+};
+
 export const ProfileAvatar: React.FC<ProfileAvatarProps> = ({
-  photoURL,
   displayName,
   email,
   size = 'md',
   className = '',
 }) => {
+  const [gravatarUrl, setGravatarUrl] = useState<string | null>(null);
+  const [imgFailed, setImgFailed] = useState(false);
   const initials = getInitials(displayName ?? null, email ?? null);
   const sizeClass = sizeClasses[size];
 
-  if (photoURL) {
+  useEffect(() => {
+    let cancelled = false;
+    resolveGravatarUrl(email).then((url) => {
+      if (!cancelled) {
+        setGravatarUrl(url);
+        setImgFailed(false);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [email]);
+
+  const handleImgError = useCallback(() => setImgFailed(true), []);
+
+  if (gravatarUrl && !imgFailed) {
     return (
       <img
-        src={photoURL}
+        src={gravatarUrl}
         alt={displayName ?? email ?? 'Profile'}
         className={`rounded-full object-cover ${sizeClass} ${className}`}
-        onError={(e) => {
-          (e.currentTarget as HTMLImageElement).style.display = 'none';
-        }}
+        onError={handleImgError}
       />
     );
   }
