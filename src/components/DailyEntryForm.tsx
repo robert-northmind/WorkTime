@@ -96,16 +96,21 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialDat
     };
 
     try {
-      setShowConfetti(true);
       await onSave(entry);
+      setShowConfetti(true);
     } catch (error) {
       console.error('Error saving entry:', error);
       alert('Failed to save entry');
-      setShowConfetti(false);
     } finally {
       setIsSaving(false);
     }
   };
+
+  const isEndBeforeStart =
+    status === 'work' &&
+    !!startTime &&
+    !!endTime &&
+    timeToMinutes(endTime) <= timeToMinutes(startTime);
 
   const activeCustomPTO = customPTO.filter((pto) => !pto.archived);
   const selectedCustomPTO = customPTO.find((pto) => pto.id === status);
@@ -173,8 +178,11 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialDat
                 type="time"
                 value={getTimeInputValue(endTime)}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="block w-full rounded-xl border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-3 bg-white/80 font-medium"
+                className={`block w-full rounded-xl shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-3 bg-white/80 font-medium ${isEndBeforeStart ? 'border-red-400' : 'border-gray-200'}`}
               />
+              {isEndBeforeStart && (
+                <p className="mt-1 text-xs text-red-600">End time must be after start time</p>
+              )}
             </div>
 
             <div>
@@ -237,7 +245,7 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({ date, initialDat
         <button
           ref={saveButtonRef}
           type="submit"
-          disabled={isSaving}
+          disabled={isSaving || isEndBeforeStart}
           className="inline-flex items-center justify-center py-2.5 px-6 border border-transparent shadow-lg text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all duration-200"
         >
           {isSaving ? (
