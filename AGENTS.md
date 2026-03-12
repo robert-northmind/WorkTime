@@ -71,6 +71,7 @@ tests/
 - **Run specific tests**: `npm test -- --testPathPattern="<pattern>"`
 - **Build**: `npm run build`
 - **Lint**: `npm run lint`
+- **Full check** (TypeScript + lint + tests): `npm run check` — **run this before committing**
 
 ## Tech Stack
 
