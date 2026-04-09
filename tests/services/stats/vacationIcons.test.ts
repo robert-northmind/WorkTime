@@ -1,42 +1,38 @@
 import {
-  VACATION_ICONS,
-  getRandomVacationIcon,
-  type VacationIcon,
+  VACATION_ICON_NAMES,
+  getRandomVacationIconName,
 } from "../../../src/services/stats/vacationIcons";
 
-describe("VACATION_ICONS", () => {
-  it("contains exactly 4 icons", () => {
-    expect(VACATION_ICONS).toHaveLength(4);
+describe("VACATION_ICON_NAMES", () => {
+  it("contains exactly 10 icons", () => {
+    expect(VACATION_ICON_NAMES).toHaveLength(10);
   });
 
-  it("each icon has a non-empty key and path", () => {
-    for (const icon of VACATION_ICONS) {
-      expect(icon.key.length).toBeGreaterThan(0);
-      expect(icon.path.length).toBeGreaterThan(0);
+  it("each name is a non-empty string", () => {
+    for (const name of VACATION_ICON_NAMES) {
+      expect(name.length).toBeGreaterThan(0);
     }
   });
 
-  it("all keys are unique", () => {
-    const keys = VACATION_ICONS.map((icon) => icon.key);
-    expect(new Set(keys).size).toBe(keys.length);
+  it("all names are unique", () => {
+    expect(new Set(VACATION_ICON_NAMES).size).toBe(VACATION_ICON_NAMES.length);
   });
 });
 
-describe("getRandomVacationIcon", () => {
-  it("returns an icon from the default list", () => {
-    const icon = getRandomVacationIcon();
-    expect(VACATION_ICONS).toContainEqual(icon);
+describe("getRandomVacationIconName", () => {
+  it("returns a name from the default list", () => {
+    const name = getRandomVacationIconName();
+    expect(VACATION_ICON_NAMES).toContain(name);
   });
 
-  it("returns the only icon when given a single-element list", () => {
-    const single: VacationIcon[] = [{ key: "test", path: "M0 0" }];
-    expect(getRandomVacationIcon(single)).toEqual(single[0]);
+  it("returns the only name when given a single-element list", () => {
+    expect(getRandomVacationIconName(["Only"])).toBe("Only");
   });
 
-  it("can return different icons across many calls", () => {
+  it("can return different names across many calls", () => {
     const seen = new Set<string>();
     for (let i = 0; i < 100; i++) {
-      seen.add(getRandomVacationIcon().key);
+      seen.add(getRandomVacationIconName());
     }
     expect(seen.size).toBeGreaterThan(1);
   });

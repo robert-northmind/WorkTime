@@ -12,7 +12,35 @@ import {
   calculateDayOfWeekStats,
   countSickDays,
 } from "../services/stats/StatsService";
-import { getRandomVacationIcon } from "../services/stats/vacationIcons";
+import {
+  Sun,
+  TreePalm,
+  Plane,
+  Sailboat,
+  Waves,
+  TentTree,
+  Luggage,
+  Sunset,
+  Globe,
+  Compass,
+} from "lucide-react";
+import {
+  getRandomVacationIconName,
+  type VacationIconName,
+} from "../services/stats/vacationIcons";
+
+const VACATION_ICON_COMPONENTS: Record<VacationIconName, React.ElementType> = {
+  Sun,
+  Palmtree: TreePalm,
+  Plane,
+  Sailboat,
+  Waves,
+  TentTree,
+  Luggage,
+  Sunset,
+  Globe,
+  Compass,
+};
 
 export const StatsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -43,7 +71,10 @@ export const StatsPage: React.FC = () => {
   >([]);
   const [sickDays, setSickDays] = useState<number>(0);
 
-  const vacationIcon = useMemo(() => getRandomVacationIcon(), []);
+  const VacationIcon = useMemo(() => {
+    const name = getRandomVacationIconName() as VacationIconName;
+    return VACATION_ICON_COMPONENTS[name];
+  }, []);
 
   const user = getCurrentUser();
 
@@ -227,19 +258,7 @@ export const StatsPage: React.FC = () => {
             <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-cyan-500/10 rounded-lg">
-                <svg
-                  className="w-6 h-6 text-cyan-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d={vacationIcon.path}
-                  />
-                </svg>
+                <VacationIcon className="w-6 h-6 text-cyan-600" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900">
                 Vacation (Days)
