@@ -21,9 +21,11 @@ export interface DayOfWeekStat {
   day: number; // 0=Sun, 1=Mon, ..., 6=Sat
   name: string;
   avgMinutes: number;
+  medianMinutes: number;
   minMinutes: number;
   maxMinutes: number;
   avgHoursStr: string;
+  medianHoursStr: string;
   count: number;
 }
 
@@ -123,6 +125,16 @@ export const calculateAverageWeeklyHours = (
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+export const calculateMedian = (values: number[]): number => {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 0) {
+    return (sorted[mid - 1] + sorted[mid]) / 2;
+  }
+  return sorted[mid];
+};
+
 /**
  * Calculates statistics for each day of the week (Mon-Fri only).
  * Returns avg, min, max worked minutes per day.
@@ -165,6 +177,7 @@ export const calculateDayOfWeekStats = (
 
     const avgMinutes =
       count > 0 ? minutes.reduce((a, b) => a + b, 0) / count : 0;
+    const medianMinutes = calculateMedian(minutes);
     const minMinutes = count > 0 ? Math.min(...minutes) : 0;
     const maxMinutes = count > 0 ? Math.max(...minutes) : 0;
 
@@ -172,9 +185,11 @@ export const calculateDayOfWeekStats = (
       day: index,
       name,
       avgMinutes,
+      medianMinutes,
       minMinutes,
       maxMinutes,
       avgHoursStr: formatHours(Math.round(avgMinutes)),
+      medianHoursStr: formatHours(Math.round(medianMinutes)),
       count,
     });
   });
