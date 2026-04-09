@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { getCurrentUser } from "../services/auth/AuthService";
 import { getEntries, getUser } from "../services/firestore/FirestoreService";
 import {
@@ -12,6 +12,7 @@ import {
   calculateDayOfWeekStats,
   countSickDays,
 } from "../services/stats/StatsService";
+import { getRandomVacationIcon } from "../services/stats/vacationIcons";
 
 export const StatsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -41,6 +42,8 @@ export const StatsPage: React.FC = () => {
     }[]
   >([]);
   const [sickDays, setSickDays] = useState<number>(0);
+
+  const vacationIcon = useMemo(() => getRandomVacationIcon(), []);
 
   const user = getCurrentUser();
 
@@ -234,7 +237,7 @@ export const StatsPage: React.FC = () => {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"
+                    d={vacationIcon.path}
                   />
                 </svg>
               </div>
