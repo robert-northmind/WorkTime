@@ -282,6 +282,76 @@ describe("StatsService", () => {
 
       expect(result[0].avgHoursStr).toBe("8:00");
     });
+
+    it("should return median equal to the single value for one entry", () => {
+      const entries: DailyEntry[] = [
+        createEntry("2023-06-05", "09:00", "17:30"), // Mon: 8h = 480 min
+      ];
+
+      const result = calculateDayOfWeekStats(entries, defaultSchedule);
+
+      const monday = result.find((d) => d.day === 1);
+      expect(monday?.medianMinutes).toBe(480);
+      expect(monday?.medianHoursStr).toBe("8:00");
+    });
+
+    it("should return median as average of two middle values for even count", () => {
+      const entries: DailyEntry[] = [
+        createEntry("2023-06-05", "09:00", "17:30"), // Mon: 8h = 480 min
+        createEntry("2023-06-12", "09:00", "18:30"), // Mon: 9h = 540 min
+      ];
+
+      const result = calculateDayOfWeekStats(entries, defaultSchedule);
+
+      const monday = result.find((d) => d.day === 1);
+      expect(monday?.medianMinutes).toBe(510); // (480 + 540) / 2
+    });
+
+    it("should return the middle value for odd count", () => {
+      const entries: DailyEntry[] = [
+        createEntry("2023-06-05", "09:00", "17:30"), // Mon: 8h = 480 min
+        createEntry("2023-06-12", "09:00", "17:30"), // Mon: 8h = 480 min
+        createEntry("2023-06-19", "09:00", "18:30"), // Mon: 9h = 540 min
+      ];
+
+      const result = calculateDayOfWeekStats(entries, defaultSchedule);
+
+      const monday = result.find((d) => d.day === 1);
+      expect(monday?.medianMinutes).toBe(480);
+    });
+
+    it("should be resistant to outliers unlike average", () => {
+      // 4 normal 8h days + 1 outlier 12h day
+      const entries: DailyEntry[] = [
+        createEntry("2023-06-05", "09:00", "17:30"), // Mon: 8h = 480 min
+        createEntry("2023-06-12", "09:00", "17:30"), // Mon: 8h = 480 min
+        createEntry("2023-06-19", "09:00", "17:30"), // Mon: 8h = 480 min
+        createEntry("2023-06-26", "09:00", "17:30"), // Mon: 8h = 480 min
+        createEntry("2023-07-03", "09:00", "21:30"), // Mon: 12h = 720 min (outlier)
+      ];
+
+      const result = calculateDayOfWeekStats(entries, defaultSchedule);
+
+      const monday = result.find((d) => d.day === 1);
+      // avg = (480*4 + 720) / 5 = 528
+      expect(monday?.avgMinutes).toBe(528);
+      // median = middle value of [480, 480, 480, 480, 720] = 480
+      expect(monday?.medianMinutes).toBe(480);
+    });
+
+    it("should include formatted median hours string", () => {
+      const entries: DailyEntry[] = [
+        createEntry("2023-06-05", "09:00", "17:30"), // Mon: 8h = 480 min
+        createEntry("2023-06-12", "09:00", "18:30"), // Mon: 9h = 540 min
+        createEntry("2023-06-19", "09:00", "19:00"), // Mon: 9.5h = 570 min
+      ];
+
+      const result = calculateDayOfWeekStats(entries, defaultSchedule);
+
+      const monday = result.find((d) => d.day === 1);
+      expect(monday?.medianMinutes).toBe(540);
+      expect(monday?.medianHoursStr).toBe("9:00");
+    });
   });
 
   describe("countSickDays", () => {

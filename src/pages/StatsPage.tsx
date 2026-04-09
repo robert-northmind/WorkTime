@@ -60,10 +60,12 @@ export const StatsPage: React.FC = () => {
       day: number;
       name: string;
       avgMinutes: number;
+      medianMinutes: number;
       minMinutes: number;
       maxMinutes: number;
       avgHoursStr: string;
-      avgPercentage: number;
+      medianHoursStr: string;
+      medianPercentage: number;
       minPercentage: number;
       maxPercentage: number;
       count: number;
@@ -211,7 +213,7 @@ export const StatsPage: React.FC = () => {
       const globalMax = Math.max(...dayStats.map((s) => s.maxMinutes), 1);
       const dayStatsWithPercent = dayStats.map((s) => ({
         ...s,
-        avgPercentage: (s.avgMinutes / globalMax) * 100,
+        medianPercentage: (s.medianMinutes / globalMax) * 100,
         minPercentage: (s.minMinutes / globalMax) * 100,
         maxPercentage: (s.maxMinutes / globalMax) * 100,
       }));
@@ -452,7 +454,7 @@ export const StatsPage: React.FC = () => {
                 </svg>
               </div>
               <h3 className="text-lg font-semibold text-gray-900">
-                Weekly Rhythm (Avg)
+                Weekly Rhythm (Median)
               </h3>
             </div>
             <div className="flex items-end justify-between h-40 gap-2 px-2">
@@ -463,7 +465,7 @@ export const StatsPage: React.FC = () => {
                 >
                   {/* Hours label - always visible */}
                   <span className="text-xs font-semibold text-amber-700 mb-1 whitespace-nowrap">
-                    {day.avgHoursStr}
+                    {day.medianHoursStr}
                   </span>
                   {/* Bar container */}
                   <div className="relative w-full flex-1 flex flex-col justify-end">
@@ -474,10 +476,10 @@ export const StatsPage: React.FC = () => {
                         style={{ height: `${Math.max(day.maxPercentage, 3)}%` }}
                       />
                     )}
-                    {/* Average bar - solid, on top */}
+                    {/* Median bar - solid, on top */}
                     <div
                       className="relative z-10 w-full bg-amber-400 rounded-t-md transition-all duration-500 ease-out hover:bg-amber-500 min-h-[4px]"
-                      style={{ height: `${Math.max(day.avgPercentage, 3)}%` }}
+                      style={{ height: `${Math.max(day.medianPercentage, 3)}%` }}
                     />
                     {/* Min line - on top of avg bar */}
                     {day.count > 1 && (
@@ -495,7 +497,7 @@ export const StatsPage: React.FC = () => {
               ))}
             </div>
             <p className="mt-3 text-xs text-gray-400 text-center italic">
-              Solid bar = avg, dashed lines = min & max
+              Solid bar = median, dashed lines = min & max
             </p>
           </div>
         </div>
