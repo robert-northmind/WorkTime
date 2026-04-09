@@ -1,4 +1,15 @@
-export const VACATION_ICON_NAMES = ["Sun", "Palmtree", "Plane", "Umbrella"] as const;
+export const VACATION_ICON_NAMES = [
+  "Sun",
+  "Palmtree",
+  "Plane",
+  "Sailboat",
+  "Waves",
+  "TentTree",
+  "Luggage",
+  "Sunset",
+  "Globe",
+  "Compass",
+] as const;
 
 export type VacationIconName = (typeof VACATION_ICON_NAMES)[number];
 

@@ -4,8 +4,8 @@ import {
 } from "../../../src/services/stats/vacationIcons";
 
 describe("VACATION_ICON_NAMES", () => {
-  it("contains exactly 4 icons", () => {
-    expect(VACATION_ICON_NAMES).toHaveLength(4);
+  it("contains exactly 10 icons", () => {
+    expect(VACATION_ICON_NAMES).toHaveLength(10);
   });
 
   it("each name is a non-empty string", () => {

@@ -12,7 +12,18 @@ import {
   calculateDayOfWeekStats,
   countSickDays,
 } from "../services/stats/StatsService";
-import { Sun, TreePalm, Plane, Umbrella } from "lucide-react";
+import {
+  Sun,
+  TreePalm,
+  Plane,
+  Sailboat,
+  Waves,
+  TentTree,
+  Luggage,
+  Sunset,
+  Globe,
+  Compass,
+} from "lucide-react";
 import {
   getRandomVacationIconName,
   type VacationIconName,
@@ -22,7 +33,13 @@ const VACATION_ICON_COMPONENTS: Record<VacationIconName, React.ElementType> = {
   Sun,
   Palmtree: TreePalm,
   Plane,
-  Umbrella,
+  Sailboat,
+  Waves,
+  TentTree,
+  Luggage,
+  Sunset,
+  Globe,
+  Compass,
 };
 
 export const StatsPage: React.FC = () => {
