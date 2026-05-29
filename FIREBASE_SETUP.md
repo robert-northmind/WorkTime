@@ -70,7 +70,9 @@ VITE_FIREBASE_APP_ID=1:123456...
 ## 7. Run the App
 - [x] Restart your development server to load the new env vars:
   ```bash
-  npm run dev
+  corepack enable
+  yarn install
+  yarn dev
   ```
 - [x] Open the app in your browser.
 - [x] Try to **Login** (since it's a new project, you'll need to create a user manually in the Auth tab or handle sign-up errors if we haven't built a sign-up form yet. *Note: The current Login page calls `signInWithEmailAndPassword`. For a new user, you can manually create a user in the Firebase Console > Authentication > Users tab first.*)
@@ -94,7 +96,7 @@ If you want to host your app on the internet:
     *   Type `default` when asked for an alias.
 4.  **Deploy**:
     ```bash
-    npm run build
+    yarn build
     firebase deploy
     ```
     This will deploy your:

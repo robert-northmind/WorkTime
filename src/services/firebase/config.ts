@@ -14,29 +14,38 @@ const config = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// Check if config is valid (basic check)
-export const USE_MOCK = !config.apiKey || config.apiKey === "your_api_key";
+const hasFirebaseConfig =
+  Object.values(config).every((value) => typeof value === "string" && value.length > 0) &&
+  config.apiKey !== "your_api_key";
+
+export let USE_MOCK = import.meta.env.DEV && !hasFirebaseConfig;
 
 let app;
 let authInstance;
 let dbInstance;
 let analyticsInstance: Analytics | undefined;
 
-if (!USE_MOCK) {
+if (!hasFirebaseConfig && import.meta.env.PROD) {
+  throw new Error("Missing required Firebase configuration for production build");
+}
+
+if (!hasFirebaseConfig) {
+  console.warn("Firebase configuration missing, using local mock mode.");
+}
+
+if (hasFirebaseConfig) {
   try {
     app = initializeApp(config);
     authInstance = getAuth(app);
     dbInstance = getFirestore(app);
     analyticsInstance = getAnalytics(app);
   } catch (error) {
-    console.warn(
-      "Firebase initialization failed, falling back to mock mode:",
-      error
-    );
-    // Fallback if initialization fails even with keys
-    app = initializeApp({}); // Dummy init to satisfy types if needed, or just leave null
-    // actually we can't really init with empty config if we want to avoid errors.
-    // We'll just handle the nulls in the services or rely on USE_MOCK
+    if (import.meta.env.PROD) {
+      throw error;
+    }
+
+    console.warn("Firebase initialization failed, using local mock mode:", error);
+    USE_MOCK = true;
   }
 }
 
