@@ -18,13 +18,19 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+
+      - name: Enable Corepack
+        run: corepack enable
+
       - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
-          node-version: "24"
-          cache: npm
-      - run: npm ci
+          node-version: ">=24.5.0"
+          cache: yarn
+          cache-dependency-path: yarn.lock
+
+      - run: yarn install --immutable
       - name: Build
-        run: npm run build
+        run: yarn build
         env:
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
           VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}

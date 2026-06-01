@@ -104,7 +104,6 @@ export const login = async (email: string, password: string): Promise<void> => {
   }
 
   if (USE_MOCK) {
-    console.log('Mock Login with:', email, password);
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 500));
     setMockSession('mock');
@@ -120,7 +119,6 @@ export const login = async (email: string, password: string): Promise<void> => {
 
 export const signup = async (email: string, password: string): Promise<void> => {
   if (USE_MOCK) {
-    console.log('Mock Signup with:', email, password);
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 500));
     setMockSession('mock');

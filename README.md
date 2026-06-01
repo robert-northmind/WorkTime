@@ -28,10 +28,11 @@ A personal, multi-user-capable work time-tracking web application built with Rea
     cd WorkTime
     ```
 
-2.  **Install dependencies**:
+2.  **Install dependencies** (this project uses Yarn via Corepack):
 
     ```bash
-    npm install
+    corepack enable
+    yarn install
     ```
 
 3.  **Configure Firebase**:
@@ -51,7 +52,7 @@ A personal, multi-user-capable work time-tracking web application built with Rea
 4.  **Run the development server**:
 
     ```bash
-    npm run dev
+    yarn dev
     ```
 
 ### Optional: Agent test login mode (for local AI-agent testing)
@@ -69,7 +70,7 @@ You can enable a special login path that accepts a hard-coded test user while st
 2. Run local dev:
 
    ```bash
-   npm run dev
+   yarn dev
    ```
 
 3. On `/login`, sign in with the configured test credentials (or use the "Fill test credentials" helper button).
@@ -83,7 +84,7 @@ When this mode is disabled (or unset), authentication works normally via Firebas
 
 5.  **Build for production**:
     ```bash
-    npm run build
+    yarn build
     ```
 
 ## Project Structure
@@ -101,8 +102,8 @@ The app is deployed to Firebase Hosting at:
 
 ### CI/CD (GitHub Actions)
 
-*   Pull requests from the same repo run checks (`npm run check`).
-*   Merges to `main` (pushes to `main`) run `npm run build` and deploy to Firebase Hosting.
+*   Pull requests from the same repo run checks (`yarn check`).
+*   Merges to `main` (pushes to `main`) run `yarn build` and deploy to Firebase Hosting.
 
 ### Deploying Changes
 
@@ -111,7 +112,7 @@ To deploy new changes to production:
 1.  **Build the app**:
 
     ```bash
-    npm run build
+    yarn build
     ```
 
 2.  **Deploy to Firebase**:

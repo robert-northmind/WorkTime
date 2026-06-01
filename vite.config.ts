@@ -1,21 +1,45 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import faroUploader from "@grafana/faro-rollup-plugin";
+import { isPlaceholderValue } from "./src/services/firebase/configValidation";
 
 // https://vite.dev/config/
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode, command }) => {
   // Load env file based on `mode` in the current working directory.
   // Set the third parameter to '' to load all env regardless of the `VITE_` prefix.
   const env = loadEnv(mode, process.cwd(), "");
+  const requiredFirebaseEnv = [
+    "VITE_FIREBASE_API_KEY",
+    "VITE_FIREBASE_AUTH_DOMAIN",
+    "VITE_FIREBASE_PROJECT_ID",
+    "VITE_FIREBASE_STORAGE_BUCKET",
+    "VITE_FIREBASE_MESSAGING_SENDER_ID",
+    "VITE_FIREBASE_APP_ID",
+  ];
+  const missingFirebaseEnv = requiredFirebaseEnv.filter(
+    (key) => !env[key] || isPlaceholderValue(env[key])
+  );
+
+  // Runtime config (src/services/firebase/config.ts) enforces Firebase config
+  // whenever `import.meta.env.PROD` is true, which holds for any `vite build`
+  // regardless of mode (e.g. `--mode staging`). Gate this build-time check on
+  // the build command too, so we fail fast instead of crashing at runtime.
+  if (command === "build" && missingFirebaseEnv.length > 0) {
+    throw new Error(
+      `Missing required Firebase env vars for production build: ${missingFirebaseEnv.join(", ")}`
+    );
+  }
+
+  const uploadSourcemaps = mode === "production" && Boolean(env.FARO_API_KEY);
 
   return {
     build: {
-      sourcemap: true, // Required for source map uploads
+      sourcemap: uploadSourcemaps ? "hidden" : false,
     },
     plugins: [
       react(),
       // Only upload source maps in production builds when credentials are available
-      ...(env.FARO_API_KEY
+      ...(uploadSourcemaps
         ? [
             faroUploader({
               appName: "WorkTime",

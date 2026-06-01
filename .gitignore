@@ -12,6 +12,16 @@ dist
 dist-ssr
 *.local
 
+# Yarn local state/cache. The package manager version is pinned via packageManager
+# and fetched by Corepack.
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -23,7 +33,8 @@ dist-ssr
 *.sw?
 
 # Environment variables
-.env
+.env*
+!.env.example
 
 # Firebase cache
 .firebase/
