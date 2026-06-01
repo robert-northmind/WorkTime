@@ -1,9 +1,10 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import faroUploader from "@grafana/faro-rollup-plugin";
+import { isPlaceholderValue } from "./src/services/firebase/configValidation";
 
 // https://vite.dev/config/
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode, command }) => {
   // Load env file based on `mode` in the current working directory.
   // Set the third parameter to '' to load all env regardless of the `VITE_` prefix.
   const env = loadEnv(mode, process.cwd(), "");
@@ -16,10 +17,14 @@ export default defineConfig(({ mode }) => {
     "VITE_FIREBASE_APP_ID",
   ];
   const missingFirebaseEnv = requiredFirebaseEnv.filter(
-    (key) => !env[key] || env[key] === "your_api_key"
+    (key) => !env[key] || isPlaceholderValue(env[key])
   );
 
-  if (mode === "production" && missingFirebaseEnv.length > 0) {
+  // Runtime config (src/services/firebase/config.ts) enforces Firebase config
+  // whenever `import.meta.env.PROD` is true, which holds for any `vite build`
+  // regardless of mode (e.g. `--mode staging`). Gate this build-time check on
+  // the build command too, so we fail fast instead of crashing at runtime.
+  if (command === "build" && missingFirebaseEnv.length > 0) {
     throw new Error(
       `Missing required Firebase env vars for production build: ${missingFirebaseEnv.join(", ")}`
     );

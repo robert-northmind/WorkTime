@@ -28,10 +28,11 @@ A personal, multi-user-capable work time-tracking web application built with Rea
     cd WorkTime
     ```
 
-2.  **Install dependencies**:
+2.  **Install dependencies** (this project uses Yarn via Corepack):
 
     ```bash
-    npm install
+    corepack enable
+    yarn install
     ```
 
 3.  **Configure Firebase**:
@@ -51,8 +52,6 @@ A personal, multi-user-capable work time-tracking web application built with Rea
 4.  **Run the development server**:
 
     ```bash
-    corepack enable
-    yarn install
     yarn dev
     ```
 
